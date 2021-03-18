@@ -1,11 +1,11 @@
 # individual
-archived/
-reports/
-references/
+archived/*
+reports/*
+references/*
 
 
 # exclude data from source control by default
-/data/
+data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
