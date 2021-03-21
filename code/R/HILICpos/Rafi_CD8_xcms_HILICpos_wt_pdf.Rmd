@@ -1,5 +1,5 @@
 ---
-title: "Rafi_exhausted_CD8_xcms_RPneg_simplified"
+title: "Rafi_exhausted_CD8_xcms_HILICpos_simplified"
 author: "Minghao Gong"
 date: "3/18/2021"
 output: html_document
@@ -25,14 +25,14 @@ library(tidyr)
 library(ggpubr)
 library(ggplot2)
 
-output_dir = "../../../data/output/RPneg/"
+output_dir = "../../../data/output/HILICpos_031821run/"
 ```
 
 
 ## Get the full path to the mzML files of HILICpos
 ```{r, results=FALSE}
 
-folder_path = "/Users/gongm/Documents/projects/Rafi_Ahmed_exhaustedCD8Tcell/data/input/batch1/mzML/RPneg_exp"
+folder_path = "/Users/gongm/Documents/projects/Rafi_Ahmed_exhaustedCD8Tcell/data/input/batch1/mzML/HILICpos_exp"
 mzMLs <- list.files(folder_path, full.names=TRUE)
 
 print(mzMLs) 
@@ -41,7 +41,7 @@ print(mzMLs)
 
 ## Create a phenodata data.frame
 ```{r}
-metadata <- read.csv("../../../data/output/cleaned_sequence_files_collection/RP_seq.csv", stringsAsFactors = FALSE)
+metadata <- read.csv("../../../data/output/cleaned_sequence_files_collection/HILIC_seq.csv", stringsAsFactors = FALSE)
 colnames(metadata)
 ```
 
@@ -157,13 +157,13 @@ internal_df
 
 ```{r, echo=FALSE}
 rtr <- c(0, 600) # retention time
-mzr_l <- internal_df$deprotonated #change according to positive/negative modes
+mzr_l <- internal_df$protonated #change according to positive/negative modes
 
 ## extract the chromatogram
 pdf(paste(output_dir,"chromatogram_internal_standards.pdf", sep = ""))
 par(mfrow = c(3, 2))  # 3 rows and 2 columns
 for (mz in mzr_l) {
-  chr_raw <- chromatogram(raw_data, mz = c(mz-0.005, mz+0.005), rt = rtr)
+  chr_raw <- chromatogram(raw_data, mz = c(mz-0.01, mz+0.01), rt = rtr)
   plot(chr_raw, col = group_colors[chr_raw$sample_group])
 }
 dev.off()
@@ -189,14 +189,14 @@ dev.off()
 ## perform the peak detection on the EIC. This can help to evaluate different peak detection settings.
 ```{r}
 #chr_raw is the previous EIC
-mzr <- c(mzr_l[1]-0.005, mzr_l[1]+0.005)
+mzr <- c(mzr_l[1]-0.01, mzr_l[1]+0.01)
 chr_raw <- chromatogram(raw_data, mz = mzr, rt = rtr)
 
 cwp <- CentWaveParam(peakwidth = c(5, 30), noise = 5000, ppm = 10, # minimum intensity required for centroids to be considered
                      prefilter = c(3, 5000)) # 3 peaks and intensity >= 5000
 
-xchr <- findChromPeaks(chr_raw, param = cwp) 
-head(chromPeaks(xchr))
+xchr <- findChromPeaks(chr_raw, param = cwp)
+chromPeaks(xchr)
 ```
 
 ```{r}
@@ -222,7 +222,7 @@ xdata <- findChromPeaks(raw_data, param = cwp)
 ```{r}
 head(chromPeaks(xdata))
 dim(chromPeaks(xdata))
-write.csv(chromPeaks(xdata),"../../../data/output/RPneg/peak_picking/original_setting_peak_tab.csv")
+write.csv(chromPeaks(xdata),"../../../data/output/RPneg_031821run/peak_picking/original_setting_peak_tab.csv")
 ```
 
 ## `refineChromPeaks` allows to refine peak detection results
@@ -233,7 +233,7 @@ xdata_pp <- refineChromPeaks(xdata, mpp)
 ```
 ```{r}
 dim(chromPeaks(xdata_pp))
-write.csv(chromPeaks(xdata_pp),"../../../data/output/RPneg/peak_picking/refined_setting_peak_tab.csv")
+write.csv(chromPeaks(xdata_pp),"../../../data/output/RPneg_031821run/peak_picking/refined_setting_peak_tab.csv")
 ```
 
 ### An example for a merged peak is given below.
@@ -408,7 +408,7 @@ dev.off()
 chr_mzr <- chromatogram(xdata, mz = mzr)
 ## Define the parameters for the peak density method
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.4, bw = 1.8)
+                        minFraction = 0.7, bw = 1.8)
 ```
 
 ```{r}
@@ -427,7 +427,7 @@ dev.off()
 ```{r}
 #' Get default parameters for the grouping
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.4, bw = 1.8)
+                        minFraction = 0.7, bw = 1.8)
 
 #' Extract a BPC for the m/z slice containing serine
 chr_serine <- chromatogram(xdata, mz = c(106.04, 106.06))
@@ -546,7 +546,7 @@ dev.off()
 # Save the XCMS R object
 ```{r}
 # Save an object to a file
-saveRDS(xdata, file = paste(output_dir,"RPneg_xcms.rds",sep = ""))
+saveRDS(xdata, file = paste(output_dir,"HILICpos_xcms.rds",sep = ""))
 # Restore the object
 #readRDS(file = "my_data.rds")
 ```
