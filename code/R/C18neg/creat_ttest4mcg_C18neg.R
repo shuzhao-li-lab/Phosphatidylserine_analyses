@@ -34,7 +34,10 @@ label_index = which(colnames(lf_log2_val)=="label") #or using grep
 
 combn_ttest <- combn(unique(lf_log2_val$label),2)
 
+<<<<<<< HEAD
 list_data <- list()
+=======
+>>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
 for (i in 1:dim(combn_ttest)[2]) {
   temp_df <- lf_log2_val[lf_log2_val$label %in% combn_ttest[,i],]
   list_data[[i]]  <- lapply(temp_df[-label_index], function(x) {
@@ -68,7 +71,11 @@ for (j in 1:length(list_data)) {
 #----------
 
 # read the FT definition and prepare mummichog input; write one complete output & a mummichog input
+<<<<<<< HEAD
 featDef_df <- read.csv("../../data/output/RPneg_031821run/featureDefinitions.csv")
+=======
+featDef_df <- read.csv("../../data/output/HILICpos_031821run/featureDefinitions.csv")
+>>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
 colnames(featDef_df)
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
 # [12] "ms_level"
@@ -93,7 +100,11 @@ for (i in 1:length(ttest_res_df_list)) {
 
 
 ## write the full report, for mummichog with either padj or raw pval
+<<<<<<< HEAD
 output_dir <- "../../data/output/RPneg_031821run/cleanup_and_stat_test/ttest_equal_variance/"
+=======
+output_dir <- "../../data/output/HILICpos_031821run/cleanup_and_stat_test/"
+>>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
 
 colnames(m_featDef_ttest_df_list[[1]])
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
