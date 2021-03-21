@@ -37,7 +37,7 @@ combn_ttest <- combn(unique(lf_log2_val$label),2)
 for (i in 1:dim(combn_ttest)[2]) {
   temp_df <- lf_log2_val[lf_log2_val$label %in% combn_ttest[,i],]
   list_data[[i]]  <- lapply(temp_df[-label_index], function(x) {
-    return(tryCatch(t.test(x ~ temp_df$label),error=function(e) NULL)) 
+    return(tryCatch(t.test(x ~ temp_df$label, var.equal = TRUE),error=function(e) NULL)) 
     # here I use default setting, no assumption of equal variance is made. And default is two.sided.
   })
 }
@@ -92,7 +92,7 @@ for (i in 1:length(ttest_res_df_list)) {
 
 
 ## write the full report, for mummichog with either padj or raw pval
-output_dir <- "../../data/output/HILICpos_031821run/cleanup_and_stat_test/"
+output_dir <- "../../data/output/HILICpos_031821run/cleanup_and_stat_test/ttest_equal_variance/"
 
 colnames(m_featDef_ttest_df_list[[1]])
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
