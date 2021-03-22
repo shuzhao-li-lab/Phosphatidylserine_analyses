@@ -4,6 +4,7 @@ reports/*
 references/*
 .Rhistory
 R.Rproj
+.RData
 
 # exclude data from source control by default
 data/*
