@@ -1,0 +1,94 @@
+---
+title: "Statistical filtering and median filtering for inclusion list"
+output: html_notebook
+---
+
+
+## Clean up the environment and load the library 
+
+```{r, include=FALSE}
+rm(list = ls())
+
+library(xcms)
+library(RColorBrewer)
+library(pander)
+library(magrittr)
+library(pheatmap)
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+```
+
+## Load the data and have a look at
+
+```{r}
+getwd()
+output_dir = "../../../data/output/RPneg_0331analysis/filt_incl_list/"
+dir.create(output_dir)
+
+# load statistical test full report
+ttest_df <- read.table("../../../data/output/RPneg_031821run/cleanup_and_stat_test/ttest_equal_variance/ttest_res_full_report_R5posvsR5neg.txt", 
+                       header = TRUE, sep = '\t')
+ttest_df[1:5,1:5]
+colnames(ttest_df)
+
+```
+
+## Create median across samples in each feature
+```{r}
+Med_thre <- 16.6 #log2-scale of 100,000
+ttest_df$Median <- rowMedians(as.matrix(ttest_df[,13:21]),na.rm = TRUE)
+# You can check by: ttest_df[1:10,c(13:21,ncol(ttest_df))]
+nrow(ttest_df)
+nrow(ttest_df[ttest_df$Median > Med_thre,])
+
+```
+- Most of the features are with median higher than than 100,000 integrated values. 
+
+
+
+## Apply statistics and median filtering in each feature
+- check both padj and Rawpval
+```{r}
+Med_thre <- 16.6 #log2-scale of 100,000
+pval_thre <- 0.05
+
+nrow(ttest_df)
+nrow(ttest_df[ttest_df$pval < pval_thre & ttest_df$Median > Med_thre,])
+nrow(ttest_df[ttest_df$padj < pval_thre & ttest_df$Median > Med_thre,])
+```
+
+```{r}
+Med_thre <- 16.6 #log2-scale of 100,000
+pval_thre <- 0.05
+
+nrow(ttest_df)
+nrow(ttest_df[ttest_df$pval < pval_thre & ttest_df$Median > Med_thre,])
+nrow(ttest_df[ttest_df$padj < pval_thre & ttest_df$Median > Med_thre,])
+```
+- I decide to go with padj < 0.05 which include 760 to trim down.
+
+## Write the table out
+- This will be a temporary list which requires further merging with mummichog output to add or at least supplement information that is critical related.
+
+```{r}
+Med_thre <- 16.6 #log2-scale of 100,000
+pval_thre <- 0.05
+p_or_padj <- "rawPval" #padj rawPval; change the $pval as well
+file_key <- "ttest_R5posvsR5neg"
+
+filt_df <- ttest_df[ttest_df$pval < pval_thre & ttest_df$Median > Med_thre,]
+write.csv(filt_df,paste0(output_dir,"filt_med_",as.character(Med_thre),"_"
+                         p_or_padj,"_",as.character(pval_thre),"_",
+                         file_key,".csv"), row.names = FALSE)
+          
+          
+
+```
+
+## Next step
+- merge it with mummichog output so that we may get some sorts of annotated information. (optional)
+- Finally we will put these feature `FT###` into `featureChromatograms` to visualize the peaks.
+
