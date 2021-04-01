@@ -1,0 +1,162 @@
+---
+title: "Merge filtered features with mcg output to supplement information"
+output: html_notebook
+---
+
+
+## Clean up the environment and load the library 
+
+```{r, include=FALSE}
+rm(list = ls())
+
+library(xcms)
+library(RColorBrewer)
+library(pander)
+library(magrittr)
+library(pheatmap)
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+```
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+# Read the tables and set the output directory
+
+```{r}
+lofCpd_df <- read.table("../../../data/output/RPneg_031821run/mcg/mcg_C18neg_equal_var_ttest/R5posvsR5neg/1616377073.842988.mcg_C18neg_padj_default_R5posvsR5neg/tables/ListOfEmpiricalCompounds.tsv", 
+                        sep = "\t", header = 1, quote = "\"")
+lofPathway_df <- read.table("../../../data/output/RPneg_031821run/mcg/mcg_C18neg_equal_var_ttest/R5posvsR5neg/1616377073.842988.mcg_C18neg_padj_default_R5posvsR5neg/tables/mcg_pathwayanalysis_mcg_C18neg_padj_default_R5posvsR5neg.tsv",
+                        sep = "\t", header = 1, quote = "\"")
+  
+test_df <- read.csv("../../../data/output/RPneg_0331analysis/filt_incl_list/filt_med_16.6padj_0.05_ttest_R5posvsR5neg.csv", header = 1)
+
+output_dir <- "../../../data/output/RPneg_0331analysis/incl_list_merge_filt_mcg/"
+dir.create(output_dir)
+
+```
+
+
+```{r}
+# threshold <- 0.2
+# adduct_vec <- c("M-H2O-H[-]","M-H[-]", "M-2H[2-]")
+```
+
+## processing lofCpd_df
+
+```{r}
+# processing lofCpd_df
+lofCpd_df <-tibble(lofCpd_df)
+lofCpd_df_clean <- lofCpd_df %>% separate_rows(massfeature_rows, str_row_ion, sep = ";" , convert = TRUE)
+lofCpd_df_clean$massfeature_rows <- gsub("row", "",lofCpd_df_clean$massfeature_rows)
+lofCpd_df_clean$massfeature_rows <- formatC(
+  sapply(lofCpd_df_clean$massfeature_rows,function(x)as.integer(x)), 
+         width = 4, format = "d", flag = "0")
+lofCpd_df_clean$massfeature_rows <- paste0("FT",lofCpd_df_clean$massfeature_rows)
+
+lofCpd_df_clean$adduct_type <- sapply(lofCpd_df_clean$str_row_ion, function(x)strsplit(x,"_")[[1]][2])
+lofCpd_df_clean[1:5,]
+```
+
+## Processing lofPathway_df
+- get relationship between pathway and EID
+  - This will be first step towards indirect relationship between pathway and Feature (FTXXXX)
+- two ways of filtering:
+  - the pathway is inside the given list
+  - the pathway can be filtered with permutation p < 0.05
+
+```{r}
+# Processing lofPathway_df
+path_list_of_interest <- c("Aspartate and asparagine metabolism",
+                           "Glycerophospholipid metabolism",
+                           "Glycine, serine, alanine and threonine metabolism",
+                           "Tryptophan metabolism", 
+                           "Tyrosine metabolism",
+                           "purine metabolism",
+                           "Aminosugars metabolism",
+                           "Pyrimidine metabolism",
+                           "Sialic acid metabolism")
+
+lofPathway_df_clean <- lofPathway_df %>% separate_rows(overlap_EmpiricalCompounds..id., overlap_features..id., 
+                                                       sep = "," , convert = TRUE) %>% 
+  filter(p.value < 0.05|pathway %in% path_list_of_interest) %>%
+  select(overlap_EmpiricalCompounds..id., pathway) 
+colnames(lofPathway_df_clean) <- c("EID","pathway")
+lofPathway_df_clean[1:10,]
+```
+- Of note, the EID has duplicated EXX that points to different pathway (e.g., E126 can be in Biopterin metabolism and Tyrosine metabolism)
+
+
+## merge the tables
+- first merge filtered ttest full table with list of Compound
+- Then merge together with pathway. 
+```{r}
+# merge test full report table with the cleaned list of compound table
+m_df <- merge(test_df, lofCpd_df_clean, by.x = "X", by.y = "massfeature_rows", all.x = TRUE)
+
+print(paste0("merging test_df with list of compound give feature # of ",nrow(m_df)))
+
+# merge the outcome table with the cleaned list of pathway 
+mm_df <- merge(m_df,lofPathway_df_clean, by = "EID", all.x = TRUE)
+
+print(paste0("merging all three tables give feature # of ",nrow(m_df)))
+
+mm_df$EID <- factor(mm_df$EID)
+mm_df$X <- factor(mm_df$X)
+
+```
+
+
+## Cleanup the duplicated rows that belong to same feature but have different pathway annotation
+
+```{r}
+# This is critical to avoid single-row summary which is used in plyr
+# detach(package:plyr) 
+
+EIDbased_sum_mm_df <- mm_df %>% group_by(EID) %>% summarize(pathway_collapsed = paste(pathway, collapse = ";"))
+dim(mm_df)
+dim(EIDbased_sum_mm_df)
+
+path_vec <- c()
+for (item in EIDbased_sum_mm_df$pathway_collapsed) {
+  temp <- strsplit(item,";")[[1]]
+  temp <- unique(temp)
+  temp <- temp[!(temp %in% c("NA"))]
+  if (length(temp) == 0) {
+    temp <- ""
+  } else {
+    temp <- paste(temp, collapse = ";")
+  }
+  
+  
+  temp <- gsub(";NA", "",item)
+  temp <- gsub("NA","",temp)
+  path_vec <- c(path_vec,temp)
+}
+
+EIDbased_sum_mm_df$pathway_collapsed_clean <- path_vec
+
+mmm_df <- merge(mm_df,  EIDbased_sum_mm_df, by = "EID")
+mmm_df$pathway <- NULL
+mmm_df$pathway_collapsed <- NULL
+mmm_df <- unique(mmm_df)
+dim(mmm_df)
+
+```
+## label the duplicated features
+```{r}
+mmm_df$duplicated <- ""
+for (FT in mmm_df$X[duplicated(mmm_df$X)]) {
+  mmm_df[mmm_df$X == FT,"duplicated"] <- FT
+}
+
+```
+
+
+## Output the table
+```{r}
+write.csv(mmm_df,paste0(output_dir,"inclusion_l_mcg_merged.csv"), row.names = FALSE)
+
+```
+
