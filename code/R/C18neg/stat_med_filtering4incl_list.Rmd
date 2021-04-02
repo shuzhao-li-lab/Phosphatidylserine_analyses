@@ -80,13 +80,54 @@ p_or_padj <- "rawPval" #padj rawPval; change the $pval as well
 file_key <- "ttest_R5posvsR5neg"
 
 filt_df <- ttest_df[ttest_df$pval < pval_thre & ttest_df$Median > Med_thre,]
-write.csv(filt_df,paste0(output_dir,"filt_med_",as.character(Med_thre),"_"
-                         p_or_padj,"_",as.character(pval_thre),"_",
-                         file_key,".csv"), row.names = FALSE)
+write.csv(filt_df,paste0(output_dir,"filt_med_",as.character(Med_thre),"_", p_or_padj,"_",as.character(pval_thre),"_", file_key,".csv"), row.names = FALSE)
           
           
 
 ```
+
+## Supplementary: include the fold change
+
+### Read the table if needed.
+```{r}
+if(TRUE) {
+  filt_df <- read.csv("../../../data/output/RPneg_0331analysis/X4_incl_list_merge_wt_hmdb/merged_hmdb_mcg_fit_inclusion_list.csv", header = TRUE)
+}
+
+colnames(filt_df)
+```
+
+### calculate mean and log2Fold change
+```{r}
+filt_df$mean_G1 <- rowMeans(filt_df[,15:17], na.rm = TRUE)
+filt_df$mean_G2 <- rowMeans(filt_df[,18:20], na.rm = TRUE)
+filt_df$mean_G3 <- rowMeans(filt_df[,21:23], na.rm = TRUE)
+filt_df$log2FC_R5posvsR5neg <- filt_df$mean_G2 - filt_df$mean_G3
+filt_df$log2FC_R5posvsNaive <- filt_df$mean_G2 - filt_df$mean_G1
+filt_df$log2FC_R5negvsNaive <- filt_df$mean_G3 - filt_df$mean_G1
+summary(filt_df$log2FC_R5posvsR5neg)
+```
+
+### filtering by log2FC of R5posvsR5neg
+```{r}
+FC_thres <- 2
+filt2_df <- filt_df[filt_df$log2FC_R5posvsR5neg > log(FC_thres,2) | 
+                    filt_df$log2FC_R5posvsR5neg < -log(FC_thres,2), ]
+length(unique(filt2_df$X))
+```
+
+
+
+### write the table
+```{r}
+if(TRUE) {
+  output_dir <- "../../../data/output/RPneg_0331analysis/X1.sup_filt_by_FC/"
+  dir.create(output_dir)
+}
+
+write.csv(filt2_df,paste0(output_dir,"FC_",FC_thres,"_", "stat_filt_merged_hmdb_mcg_inclusion_list.csv") , row.names = FALSE)
+```
+
 
 ## Next step
 - merge it with mummichog output so that we may get some sorts of annotated information. (optional)
