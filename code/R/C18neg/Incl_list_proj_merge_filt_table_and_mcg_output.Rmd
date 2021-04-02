@@ -20,7 +20,7 @@ library(tidyr)
 library(ggpubr)
 library(ggplot2)
 ```
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
 
 # Read the tables and set the output directory
 
