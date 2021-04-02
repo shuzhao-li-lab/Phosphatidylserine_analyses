@@ -1,0 +1,87 @@
+---
+title: "Evaluation of features that were tentatively annotated by Mummichog"
+output: html_notebook
+---
+
+## Clean up and remove existed files
+```{r, include=FALSE}
+rm(list = ls())
+
+library(xcms)
+library(RColorBrewer)
+library(pander)
+library(magrittr)
+library(pheatmap)
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+```
+
+## Load the xdata object and set the output_directory
+
+```{r}
+
+getwd()
+
+if(TRUE) {
+  # When you want to reexamine certain peaks, and this provides the entry to reload xdata object.
+  xdata <- readRDS("../../../data/output/RPneg_0331analysis/xdata_corrected/pd_corr_RPneg_xcms.rds")
+  output_dir <- "../../../data/output/RPneg_0331analysis/X5_incl_list_chromPeak/"
+  dir.create(output_dir)
+}
+
+```
+
+
+## load the inclusion list previously generated.
+
+```{r}
+incl_l <- read.csv("../../../data/output/RPneg_0331analysis/X1.sup_filt_by_FC/FC_2_stat_filt_merged_hmdb_mcg_inclusion_list.csv", header = TRUE)
+colnames(incl_l)
+```
+
+## Create a subtitle
+```{r}
+incl_l$sub_title <- paste0(incl_l$X, "\t",incl_l$adduct, "\n", substring(incl_l$compound_name, 1, 80), "\n" , substring(incl_l$pathway_collapsed_clean,1,80))
+```
+
+## Sort the table by log2FC
+```{r}
+incl_l$abs_log2FC_R5posvsR5neg <- abs(incl_l$log2FC_R5posvsR5neg)
+incl_l <- incl_l %>% arrange(desc(abs_log2FC_R5posvsR5neg))
+```
+
+
+## Check the xdata
+```{r}
+xdata$sample_group
+xdata$sample_name
+```
+
+
+## Evaluation
+# TO-DO: It is still not done if want to get the chrom peak figure with only selected samples.
+```{r}
+# list_FT <- c(1:10,100:110)
+
+list_FT <- incl_l$X[1:10]
+#TO-DO: list_annotation 
+if(TRUE) {
+  group_colors <- c("#999999","#ff0000", "#0000ff" )
+  names(group_colors) <- c("G1_Naive","G2_R5pos","G3_R5neg")
+  sample_colors <- group_colors[xdata$sample_group]
+  pdf(paste(output_dir,"incl_list","chromPeak_evaluation.pdf", sep = ""), width = 20, height = 10)
+  par(mfrow = c(2, 2))
+  for (i in list_FT) {
+  
+  feature_chroms <- featureChromatograms(xdata, features = i)
+  plot(feature_chroms, col = sample_colors, xlab = "",
+     peakBg = sample_colors[chromPeaks(feature_chroms)[, "sample"]],  sub = incl_l[incl_l$X == i,"sub_title"]) #as.character(i)
+  }
+  dev.off()
+}
+
+
+```
