@@ -1,8 +1,9 @@
 ---
 title: "Rafi_exhausted_CD8_xcms_RPneg_simplified"
 author: "Minghao Gong"
-date: "3/18/2021"
+date: "04/02/2021"
 output: html_document
+note: This is the reanalysis of the RPneg data because of HILIC/RP data mislabeled.
 ---
 
 
@@ -10,6 +11,7 @@ output: html_document
 
 ```{r setup, cache = FALSE}
 knitr::opts_chunk$set(error = TRUE)
+
 #knitr::opts_chunk$set(eval = FALSE)
 ```
 
@@ -24,38 +26,51 @@ library(dplyr)
 library(tidyr)
 library(ggpubr)
 library(ggplot2)
+getwd()
+```
 
-output_dir = "../../../data/output/RPneg/"
+```{r}
+output_dir1 = "../../../data/output/RPneg_0402/"
+dir.create(output_dir1)
+output_dir2 = "../../../data/output/RPneg_0402/xcms/"
+dir.create(output_dir2)
+output_dir = output_dir2
 ```
 
 
-## Get the full path to the mzML files of HILICpos
+## Get the full path to the mzML files of RPneg
 ```{r, results=FALSE}
 
-folder_path = "/Users/gongm/Documents/projects/Rafi_Ahmed_exhaustedCD8Tcell/data/input/batch1/mzML/RPneg_exp"
-mzMLs <- list.files(folder_path, full.names=TRUE)
+path <- "../../../data/input/batch1/mzML/RPneg_exp/"
+list.files(path)[1:5]
 
-print(mzMLs) 
+metadata <- read.csv("../../../data/output/cleaned_sequence_files_collection/RP_seq.csv", stringsAsFactors = FALSE, header = TRUE)
+colnames(metadata)
+metadata[1:5,c("sample_name","sample_group","technical_group")]
 ```
 
 
 ## Create a phenodata data.frame
 ```{r}
-metadata <- read.csv("../../../data/output/cleaned_sequence_files_collection/RP_seq.csv", stringsAsFactors = FALSE)
-colnames(metadata)
-```
+if(TRUE) { #when the ".mzML" is not in metatdata's Sample.ID 
+  metadata$sample_name <- paste0(metadata$sample_name,".mzML")
+}
 
+## Create a phenodata data.frame
+pd = metadata[,c("sample_name","sample_group","technical_group")]
+```
+#### Rename column if you want to:
 ```{r}
-pd = metadata[,c("sample_name","sample_group","technical_group","method")]
-#colnames(pd) = c("sample_name","sample_group")
-
-print(pd)
-
+# colnames(pd) = c("sample_name","sample_group","sample_batch")
+pd$technical_group <- factor(pd$technical_group)
+pd[1:5,1:3]
 ```
+
 
 # Use MSnbase package to load centroid MS data.
 ```{r}
-raw_data <- readMSData(files = mzMLs, pdata = new("NAnnotatedDataFrame", pd),
+raw_data <- readMSData(files = paste0(path, "/", pd$sample_name), 
+                       pdata = new("NAnnotatedDataFrame", pd),
                        mode = "onDisk")
 ```
 
@@ -69,13 +84,15 @@ So it is a 10-min run!
 ## ploting base peak chromatogram (BPC) for each file
 - BPC shows only the signal from the most intense mass in any given mass spectrum, plotted versus time, while TIC shows the sum
 
-```{r}
 ## Get the base peak chromatograms. This reads data from the files.
+
+```{r}
 bpis <- chromatogram(raw_data, aggregationFun = "max") # set `sum` can plot TIC
 ```
 
+
 ```{r}
-## Define colors for the two groups
+## Define colors for the three groups
 #group_colors <- paste0(brewer.pal(3, "Set1")[1:3], "60") # define group colors
 group_colors <- c("#0000ff","#999999","#ff0000")
 names(group_colors) <- unique(raw_data$sample_group) 
@@ -139,10 +156,13 @@ pheatmap(cormat, annotation = ann,
 ```
 
 ```{r}
-# pdf(paste(output_dir,"cormat_bpis.pdf", sep = ""))
-# pheatmap(cormat, annotation = ann,
-#          annotation_color = list(group = group_colors))
-# dev.off()
+if(TRUE){
+  pdf(paste(output_dir,"cormat_bpis.pdf", sep = ""))
+  pheatmap(cormat, annotation = ann,
+           annotation_color = list(group = group_colors))
+  dev.off()
+
+}
 ```
 
 ----
@@ -168,21 +188,6 @@ for (mz in mzr_l) {
 }
 dev.off()
 
-
-# Not working
-# numerator = 1
-# fig_l = list()
-# for (mz in mzr_l) {
-#   chr_raw <- chromatogram(raw_data, mz = c(mz-0.005, mz+0.005), rt = rtr)
-#   fig_l[[numerator]] <- plot(chr_raw, col = group_colors[chr_raw$sample_group], plot = "logical")
-#   numerator = numerator + 1
-# }
-
-# multi.page <- ggarrange(plotlist = fig_l,
-#                         nrow = 2, ncol = 2)
-# ggexport(multi.page, filename = paste(output_dir,"chromatogram_internal_standards.pdf", sep = ""))
-
-
 ```
 ----
 
@@ -207,6 +212,14 @@ chromPeakData(xchr)
 sample_colors <- group_colors[xchr$sample_group]
 plot(xchr, col = sample_colors,
      peakBg = sample_colors[chromPeaks(xchr)[, "column"]])
+
+
+if(TRUE) {
+  pdf(paste(output_dir , "peak_detection_EIC_on_", as.character(mzr[1]),"_",as.character(mzr[2]) ,".pdf", sep = ""))
+  plot(xchr, col = sample_colors,
+     peakBg = sample_colors[chromPeaks(xchr)[, "column"]])
+  dev.off()
+}
 ```
 
 # perform the chromatographic peak detection on the full data set (Taking longest time)
@@ -222,7 +235,8 @@ xdata <- findChromPeaks(raw_data, param = cwp)
 ```{r}
 head(chromPeaks(xdata))
 dim(chromPeaks(xdata))
-write.csv(chromPeaks(xdata),"../../../data/output/RPneg/peak_picking/original_setting_peak_tab.csv")
+dir.create(paste0(output_dir,"peak_picking/"))
+write.csv(chromPeaks(xdata),paste(output_dir, "peak_picking/original_setting_peak_tab.csv", sep = ""))
 ```
 
 ## `refineChromPeaks` allows to refine peak detection results
@@ -233,7 +247,7 @@ xdata_pp <- refineChromPeaks(xdata, mpp)
 ```
 ```{r}
 dim(chromPeaks(xdata_pp))
-write.csv(chromPeaks(xdata_pp),"../../../data/output/RPneg/peak_picking/refined_setting_peak_tab.csv")
+write.csv(chromPeaks(xdata_pp),paste(output_dir, "peak_picking/refined_setting_peak_tab.csv", sep = ""))
 ```
 
 ### An example for a merged peak is given below.
@@ -287,25 +301,33 @@ pandoc.table(
 ##  plot the location of the identified chromatographic peaks in the m/z - retention time space
 
 ```{r}
-#plotChromPeaks(xdata, file = 1)
+plotChromPeaks(xdata, file = 1)
 
-pdf(paste(output_dir,"mz_rt_location_of_id_chrom_pks.pdf", sep = ""))
-par(mfrow = c(3, 3))  # 3 rows and 3 columns
-for (i in 1:12) {
-  plotChromPeaks(xdata, file = i)
+if(TRUE) {
+    pdf(paste(output_dir,"mz_rt_location_of_id_chrom_pks.pdf", sep = ""))
+  par(mfrow = c(3, 3))  # 3 rows and 3 columns
+  for (i in 1:12) {
+    plotChromPeaks(xdata, file = i)
+  }
+  dev.off()
 }
-dev.off()
+
 
 ```
 
 ## global overview of the peak detection to see if consistent peak detection patterns across samples.
 
 ```{r}
+par(mar=c(5,15,4,1))
 plotChromPeakImage(xdata)
 
-pdf(paste(output_dir,"consist_pk_detect_patterns_across_samples.pdf", sep = ""))
-plotChromPeakImage(xdata)
-dev.off()
+if(TRUE) {
+  pdf(paste(output_dir,"consist_pk_detect_patterns_across_samples.pdf", sep = ""), height = 10)
+  par(mar=c(5,15,4,1))
+  plotChromPeakImage(xdata)
+  dev.off()  
+}
+
 
 ```
 
@@ -340,6 +362,7 @@ ints <- split(log2(chromPeaks(xdata)[, "into"]),
 boxplot(ints, varwidth = TRUE, col = group_colors[xdata$sample_group],
         ylab = expression(log[2]~intensity), main = "Peak intensities")
 grid(nx = NA, ny = NULL)
+
 ```
 ```{r}
 pdf(paste(output_dir,"box_plot_distribution_intensities_log2scale.pdf", sep = ""))
@@ -376,8 +399,17 @@ plotAdjustedRtime(xdata, col = group_colors[xdata$sample_group])
 pdf(paste(output_dir,"alignment_res_bpis_adj_AdjustedRtime.pdf", sep = ""))
 par(mfrow = c(2, 1), mar = c(4.5, 4.2, 1, 0.5))
 plot(bpis_adj, col = group_colors[bpis_adj$sample_group])
-plotAdjustedRtime(xdata, col = group_colors[xdata$sample_group])
+
+grp_col <- group_colors[xdata$sample_group]
+if(FALSE) { # check some certain samples
+  grp_col <- group_colors[xdata$sample_group]
+  xdata$sample_name # check the location of a file to check
+  grp_col[25] <- "008000" # Here I want to check if outlier is HEU_HEU_195_001
+}
+
+plotAdjustedRtime(xdata, col = grp_col) 
 dev.off()
+
 
 ```
 ## evaluate the impact of the alignment on the test peak.
@@ -408,7 +440,7 @@ dev.off()
 chr_mzr <- chromatogram(xdata, mz = mzr)
 ## Define the parameters for the peak density method
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.4, bw = 1.8)
+                        minFraction = 0.6, bw = 1.8)
 ```
 
 ```{r}
@@ -427,10 +459,11 @@ dev.off()
 ```{r}
 #' Get default parameters for the grouping
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.4, bw = 1.8)
+                        minFraction = 0.6, bw = 1.8)
 
-#' Extract a BPC for the m/z slice containing serine
-chr_serine <- chromatogram(xdata, mz = c(106.04, 106.06))
+#' Extract a BPC for the m/z slice containing succinate (M-H)
+chr_serine <- chromatogram(xdata, mz = c(	
+117.00, 117.50))
 
 #' Dry-run correspondence and show the results.
 plotChromPeakDensity(chr_serine, col = sample_colors, param = pdp,
@@ -441,7 +474,7 @@ plotChromPeakDensity(chr_serine, col = sample_colors, param = pdp,
 
 ## Perform the correspondence
 - References: https://jorainer.github.io/metabolomics2018/xcms-preprocessing.html#3_Workflow:_metabolomics_data_preprocessing_using_xcms
-
+- Here I use 0.6 to get at least 2 samples have the features.
 ```{r}
 ## Perform the correspondence
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
@@ -482,17 +515,19 @@ write.csv(ftsummary,paste(output_dir,"featureSummary.csv",sep = ""))
 head(ftsummary)
 ```
 
+### Peak filling (optional)
 ```{r}
-assays(res)$raw_filled <- featureValues(xdata, filled = TRUE)
-assayNames(res)
-head(assay(res, "raw"))
-#head(assay(res, "raw_filled"))
+if(FALSE) { # If you have performed filling of empty peaks.
+  assays(res)$raw_filled <- featureValues(xdata, filled = TRUE)
+  assayNames(res)
+  head(assay(res, "raw_filled"))
+}
 ```
 
 
 # Evaluation
 ```{r}
-list_FT <- c(1:10,100:110,1000:1010)
+list_FT <- c(1:10,100:110)
 #TO-DO: list_annotation 
 pdf(paste(output_dir,"Individual_feature_evaluation.pdf", sep = ""))
 par(mfrow = c(2, 2))
@@ -546,7 +581,7 @@ dev.off()
 # Save the XCMS R object
 ```{r}
 # Save an object to a file
-saveRDS(xdata, file = paste(output_dir,"RPneg_xcms.rds",sep = ""))
+saveRDS(xdata, file = paste(output_dir,"RPneg_xcms_minFrac07.rds",sep = ""))
 # Restore the object
 #readRDS(file = "my_data.rds")
 ```
