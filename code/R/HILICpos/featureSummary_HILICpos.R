@@ -1,23 +1,26 @@
 # This is to collapse the technical replicates occur in some samples.
+rm(list = ls())
 
 library(corrplot)
 
-output_dir = "../../data/output/HILICpos_031821run/cleanup_and_stat_test/"
+output_dir = "../../data/output/HILICpos_0402/cleanup_and_stat_test/"
 if(T) {
   dir.create(output_dir)
 }
 
-df <- read.csv("../../data/output/HILICpos_031821run/featureValues.csv", row.names = 1)
+df <- read.csv("../../data/output/HILICpos_0402/xcms/featureValues.csv", row.names = 1)
 View(df)
 # -----------
 
 
 pdf(paste(output_dir,"barplot_TIC_befSum.pdf", sep = ""))
+par(mar=c(15,5,4,1))
 barplot(colSums(df, na.rm = TRUE), las=2)
 dev.off()
 
 
 pdf(paste(output_dir,"barplot_TIC_befSum_log2scale.pdf", sep = ""))
+par(mar=c(15,5,4,1))
 barplot(colSums(log(df,2), na.rm = TRUE), las=2)
 dev.off()
 
@@ -31,6 +34,8 @@ dev.off()
 
 # 
 name_l <- sapply(colnames(df), function(x)unlist(strsplit(x,".mzML"))[1])
+
+#This part is specific to part of samples from 7:12 that have duplicated.
 name_group_l <- c(name_l[1:6], sapply(name_l[7:length(name_l)], function(x)substring(x,1,nchar(x)-1))) # it is somekind of dictionary
 
 group_iterator <- unique(name_group_l)
@@ -48,15 +53,16 @@ for (item in group_iterator) {
 }
 
 colnames(new_df) <- c("FT_ID",group_iterator)
-write.csv(new_df, paste(output_dir,"featureValues_summarized.csv"), row.names = FALSE)
+write.csv(new_df, paste0(output_dir,"featureValues_summarized.csv"), row.names = FALSE)
 
 #log2 scale
 log2_new_df <- log(new_df[,2:ncol(new_df)],2)
 
-write.csv(log2_new_df, paste(output_dir,"featureValues_summarized_log2scale.csv"))
+write.csv(log2_new_df, paste0(output_dir,"featureValues_summarized_log2scale.csv"))
 
 #post-average bar plots of TIC
-pdf(paste(output_dir,"barplot_TIC_postSum_log2.pdf", sep = ""))
+pdf(paste0(output_dir,"barplot_TIC_postSum_log2.pdf"))
+par(mar=c(15,5,4,1))
 barplot(colSums(log2_new_df, na.rm = TRUE), las=2)
 dev.off()
 
