@@ -1,17 +1,25 @@
+rm(list = ls())
+
 library(plyr)
 
-xcms_Featab <- read.csv("../../../Rafi_Ahmed_exhaustedCD8Tcell/data/output/RPneg_031821run/cleanup_and_stat_test/featureValues_summarized_log2scale.csv")
+xcms_Featab <- read.csv("../../data/output/RPneg_0402/cleanup_and_stat_test/featureValues_summarized_log2scale.csv")
 head(xcms_Featab)
 
 lf_val <- t(xcms_Featab[,2:ncol(xcms_Featab)]) # lf: long-formatted
 colnames(lf_val) <- xcms_Featab$X
 lf_val[1:5,1:10]
-# FT0001   FT0002   FT0003   FT0004   FT0005   FT0006   FT0007   FT0008   FT0009   FT0010
-# G1_Naive_1 19.84599       NA 24.13974 17.97085 18.08051 17.83918 17.63904 22.51645 22.05655 16.00973
-# G1_Naive_2 19.78193 18.55055 24.15057 18.24213 18.26202 19.20744 22.03089 22.86934 22.21359 15.79138
-# G1_Naive_3 20.06191       NA 24.23105 18.38411 18.28269 18.10398 21.84006 22.80563 22.03829       NA
-# G2_R5pos_1 19.80967       NA 17.15374 17.21725 17.94974 22.93556 21.18812 21.86473 21.80225       NA
-# G2_R5pos_2 19.80213       NA 24.08467 17.74124 17.96691 16.19684 21.41344 22.60928 21.56236 16.47913
+# FT0001   FT0002   FT0003   FT0004   FT0005   FT0006
+# G2_R5pos_1 17.27595 17.89888 21.28560 18.90236 17.07683 19.91885
+# G2_R5pos_2 16.92078 17.89240 20.79049 19.38063 16.64326 19.84517
+# G2_R5pos_3 16.76319 17.87494 20.80836 19.79220 16.43005 20.27780
+# G1_Naive_1 16.62220 17.55000 20.79110 19.71521 16.32105 20.16929
+# G1_Naive_2 16.15796 17.59921 20.57279 20.22519 15.95561 20.64719
+# FT0007   FT0008   FT0009   FT0010
+# G2_R5pos_1       NA 22.78709 18.53189 15.01651
+# G2_R5pos_2       NA 22.98639       NA       NA
+# G2_R5pos_3       NA 23.17956       NA 15.94744
+# G1_Naive_1       NA 23.28054 19.21986 14.50632
+# G1_Naive_2 16.86536 23.90663       NA 14.57523
 
 if(F) { # If log2 scale was not done
   lf_log2_val <- log(lf_val,2)
@@ -34,10 +42,8 @@ label_index = which(colnames(lf_log2_val)=="label") #or using grep
 
 combn_ttest <- combn(unique(lf_log2_val$label),2)
 
-<<<<<<< HEAD
 list_data <- list()
-=======
->>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
+
 for (i in 1:dim(combn_ttest)[2]) {
   temp_df <- lf_log2_val[lf_log2_val$label %in% combn_ttest[,i],]
   list_data[[i]]  <- lapply(temp_df[-label_index], function(x) {
@@ -71,11 +77,8 @@ for (j in 1:length(list_data)) {
 #----------
 
 # read the FT definition and prepare mummichog input; write one complete output & a mummichog input
-<<<<<<< HEAD
-featDef_df <- read.csv("../../data/output/RPneg_031821run/featureDefinitions.csv")
-=======
-featDef_df <- read.csv("../../data/output/HILICpos_031821run/featureDefinitions.csv")
->>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
+featDef_df <- read.csv("../../data/output/RPneg_0402/xcms/minFrac07/featureDefinitions.csv")
+
 colnames(featDef_df)
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
 # [12] "ms_level"
@@ -100,21 +103,21 @@ for (i in 1:length(ttest_res_df_list)) {
 
 
 ## write the full report, for mummichog with either padj or raw pval
-<<<<<<< HEAD
-output_dir <- "../../data/output/RPneg_031821run/cleanup_and_stat_test/ttest_equal_variance/"
-=======
-output_dir <- "../../data/output/HILICpos_031821run/cleanup_and_stat_test/"
->>>>>>> c08b968f536c28e8f97bb5780c300459bfba810f
+
+output_dir <- "../../data/output/RPneg_0402/ttest_equal/"
+dir.create(output_dir)
 
 colnames(m_featDef_ttest_df_list[[1]])
-# [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
-# [12] "ms_level" "t_score"  "pval"     "padj"   
+# [1] "X"          "mzmed"      "mzmin"      "mzmax"      "rtmed"     
+# [6] "rtmin"      "rtmax"      "npeaks"     "G1_Naive"   "G2_R5pos"  
+# [11] "G3_R5neg"   "ms_level"   "G2_R5pos_1" "G2_R5pos_2" "G2_R5pos_3"
+# [16] "G1_Naive_1" "G1_Naive_2" "G1_Naive_3" "G3_R5neg_1" "G3_R5neg_2"
+# [21] "G3_R5neg_3" "t_score"    "pval"       "padj"    
 
 combn_ttest
-# [,1]  [,2]  [,3] 
-# [1,] Naive Naive R5pos
-# [2,] R5pos R5neg R5neg
-# Levels: Naive R5neg R5pos
+# [1,] R5pos R5pos Naive
+# [2,] Naive R5neg R5neg
+# Levels: R5pos R5neg Naive
 
 for (i in 1:length(m_featDef_ttest_df_list)) {
   m_df <- m_featDef_ttest_df_list[[i]]
