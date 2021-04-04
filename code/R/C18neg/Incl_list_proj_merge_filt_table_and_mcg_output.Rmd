@@ -25,12 +25,12 @@ library(ggplot2)
 # Read the tables and set the output directory
 
 ```{r}
-lofCpd_df <- read.table("../../../data/output/RPneg_031821run/mcg/mcg_C18neg_equal_var_ttest/R5posvsR5neg/1616377073.842988.mcg_C18neg_padj_default_R5posvsR5neg/tables/ListOfEmpiricalCompounds.tsv", 
+lofCpd_df <- read.table("../../../data/output/RPneg_0402/mcg_RPneg/R5posvsR5neg/1617476207.0947719.mcg_C18neg_padj_0.05_R5posvsR5neg/tables/ListOfEmpiricalCompounds.tsv", 
                         sep = "\t", header = 1, quote = "\"")
-lofPathway_df <- read.table("../../../data/output/RPneg_031821run/mcg/mcg_C18neg_equal_var_ttest/R5posvsR5neg/1616377073.842988.mcg_C18neg_padj_default_R5posvsR5neg/tables/mcg_pathwayanalysis_mcg_C18neg_padj_default_R5posvsR5neg.tsv",
+lofPathway_df <- read.table("../../../data/output/RPneg_0402/mcg_RPneg/R5posvsR5neg/1617476207.0947719.mcg_C18neg_padj_0.05_R5posvsR5neg/tables/mcg_pathwayanalysis_mcg_C18neg_padj_default_R5posvsR5neg.tsv",
                         sep = "\t", header = 1, quote = "\"")
   
-test_df <- read.csv("../../../data/output/RPneg_0331analysis/filt_incl_list/filt_med_16.6padj_0.05_ttest_R5posvsR5neg.csv", header = 1)
+test_df <- read.csv("../../../data/output/RPneg_0402/filt_incl_list/filt_med_16.6padj_0.05_ttest_R5posvsR5neg.csv", header = 1)
 
 output_dir <- "../../../data/output/RPneg_0331analysis/incl_list_merge_filt_mcg/"
 dir.create(output_dir)
