@@ -1,0 +1,184 @@
+---
+title: "Evaluation of features that were tentatively annotated or filtered for MS/MS"
+function: in this notebook, it is for generating chromPeaks from inclusion list
+data: RPneg data reanalyzed on 04/02/2021
+output: html_notebook
+---
+
+## Clean up and remove existed files
+```{r, include=FALSE}
+rm(list = ls())
+
+library(xcms)
+library(RColorBrewer)
+library(pander)
+library(magrittr)
+library(pheatmap)
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+```
+
+## Load the xdata object and set the output_directory
+
+```{r}
+
+getwd()
+
+if(TRUE) {
+  # When you want to reexamine certain peaks, and this provides the entry to reload xdata object.
+  xdata <- readRDS("../../../data/output/RPneg_0402/xcms/minFrac07/RPneg_xcms_minFrac07.rds")
+  output_dir <- "../../../data/output/RPneg_0402/incl_list_chromPeak/"
+  dir.create(output_dir)
+}
+
+```
+
+
+## load the inclusion list previously generated.
+
+```{r}
+incl_l <- read.csv("../../../data/output/RPneg_0402/filt_incl_list/filt_med_16.6_padj_0.05_FC_2_ttest_R5posvsR5neg.csv", header = TRUE)
+colnames(incl_l)
+```
+
+## Create a subtitle 
+- If you have merged table with mcg &/ hmdb_search results. Take `TRUE`
+- If you are directly using the inclusion list created by statistical/median/FC filtering, Take `FALSE`
+```{r}
+if(FALSE) {
+  incl_l$sub_title <- paste0(incl_l$X, "\t",incl_l$adduct, "\n", substring(incl_l$compound_name, 1, 80), "\n" , substring(incl_l$pathway_collapsed_clean,1,80))
+} else {incl_l$sub_title <- paste0(incl_l$X ,"; log2FC = ",incl_l$log2FC_R5posvsR5neg)}
+
+```
+
+## Sort the table by log2FC
+- you may need to change according to how you name the log2FC columns
+```{r}
+incl_l$abs_log2FC_R5posvsR5neg <- abs(incl_l$log2FC_R5posvsR5neg)
+incl_l <- incl_l %>% arrange(desc(abs_log2FC_R5posvsR5neg))
+```
+
+
+## Check the xdata
+- See if they are matched together (in case).
+```{r}
+xdata$sample_group
+xdata$sample_name
+```
+
+
+## Evaluation
+# TO-DO: It is still not done if want to get the chrom peak figure with only selected samples.
+```{r}
+# list_FT <- c(1:10,100:110)
+
+list_FT <- incl_l$X[1:5]
+#TO-DO: list_annotation 
+if(TRUE) {
+  group_colors <- c("#999999","#0000ff", "#ff0000" )
+  names(group_colors) <- c("G1_Naive","G2_R5pos","G3_R5neg")
+  sample_colors <- group_colors[xdata$sample_group]
+  pdf(paste(output_dir,"incl_list","chromPeak_evaluation.pdf", sep = ""), width = 20, height = 10)
+  par(mfrow = c(2, 2))
+  for (i in list_FT) {
+  
+  feature_chroms <- featureChromatograms(xdata, features = i)
+  plot(feature_chroms, col = sample_colors, xlab = "",
+     peakBg = sample_colors[chromPeaks(feature_chroms)[, "sample"]],  sub = incl_l[incl_l$X == i,"sub_title"]) #as.character(i)
+  }
+  dev.off()
+}
+
+
+```
+
+
+# testing
+```{r}
+res <- quantify(xdata)
+assay(res)["FT0143",]
+```
+
+```{r}
+# list_FT <- c(1:10,100:110)
+
+# list_FT <- incl_l$X[143:144]
+list_FT <- c("FT0143")
+
+#TO-DO: list_annotation 
+if(TRUE) {
+  group_colors <- c("#999999","#0000ff", "#ff0000" )
+  names(group_colors) <- c("G1_Naive","G2_R5pos","G3_R5neg")
+  sample_colors <- group_colors[xdata$sample_group]
+  pdf(paste(output_dir,"incl_list","debugging_chromPeak_evaluation.pdf", sep = ""), width = 20, height = 10)
+  par(mfrow = c(2, 2))
+  for (i in list_FT) {
+  
+  feature_chroms <- featureChromatograms(xdata, features = i)
+  plot(feature_chroms, col = sample_colors, xlab = "",
+     peakBg = sample_colors[chromPeaks(feature_chroms)[, "sample"]],  sub = incl_l[incl_l$X == i,"sub_title"]) #as.character(i)
+  }
+  dev.off()
+}
+
+
+```
+```{r}
+mzr <- c(163.0040, 163.1485)
+par(mfrow = c(2, 1))
+plot(chromatogram(xdata, mz = mzr, aggregationFun = "max"))
+highlightChromPeaks(xdata, mz = mzr, whichPeaks = "apex_within")
+plotChromPeakDensity(xdata, type = "apex_within", mz = mzr, simulate = FALSE)
+```
+
+```{r}
+#' Get default parameters for the grouping
+pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
+                        minFraction = 0.6, bw = 1.8)
+
+#' Extract a BPC for the m/z slice containing succinate (M-H)
+chr_test <- chromatogram(xdata, mz = c(154.9474,  155.1080), rt = c(290,360))
+
+#' Dry-run correspondence and show the results.
+
+plotChromPeakDensity(chr_test, col = sample_colors, simulate = FALSE, # param = pdp,
+                     peakBg = sample_colors[chromPeaks(chr_test)[, "sample"]],
+                     peakCol = sample_colors[chromPeaks(chr_test)[, "sample"]],
+                     peakPch = 16)
+```
+# Try to incorporate with correspondence results.
+```{r}
+# list_FT <- c(1:10,100:110)
+
+list_FT <- incl_l$X[1:10]
+#list_FT <- c("FT0143")
+
+#TO-DO: list_annotation 
+if(TRUE) {
+  group_colors <- c("#99999980","#0000ff80", "#ff000080" )
+  names(group_colors) <- c("G1_Naive","G2_R5pos","G3_R5neg")
+  sample_colors <- group_colors[xdata$sample_group]
+  pdf(paste(output_dir,"incl_list","debugging_chromPeak_evaluation.pdf", sep = ""), width = 10, height = 10)
+  par(mfrow = c(4, 4))
+  for (i in list_FT) {
+  feature_chroms <- featureChromatograms(xdata, features = i)
+  plotChromPeakDensity(feature_chroms, col = sample_colors, simulate = FALSE, # param = pdp,
+                     peakBg = sample_colors[chromPeaks(feature_chroms)[, "sample"]],
+                     peakCol = sample_colors[chromPeaks(feature_chroms)[, "sample"]],
+                     peakPch = 16, sub = incl_l[incl_l$X == i,"sub_title"])
+  
+  # plot(feature_chroms, col = sample_colors, xlab = "",
+  #    peakBg = sample_colors[chromPeaks(feature_chroms)[, "sample"]],  sub = incl_l[incl_l$X == i,"sub_title"]) #as.character(i)
+  }
+  dev.off()
+}
+
+
+```
+```{r}
+write.csv(incl_l[1:10,],paste0(output_dir,"debugging_table.csv"), row.names = FALSE)
+```
+
