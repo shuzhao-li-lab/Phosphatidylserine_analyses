@@ -1,0 +1,86 @@
+---
+title: "Evaluation of EIC and XIC on certain features"
+output: html_notebook
+---
+
+# Load the libraries
+
+```{r setup, cache = FALSE}
+knitr::opts_chunk$set(error = TRUE)
+
+#knitr::opts_chunk$set(eval = FALSE)
+```
+
+```{r, include=FALSE}
+rm(list = ls())
+library(xcms)
+library(RColorBrewer)
+library(pander)
+library(magrittr)
+library(pheatmap)
+library(SummarizedExperiment)
+library(dplyr)
+library(tidyr)
+library(ggpubr)
+library(ggplot2)
+getwd()
+```
+
+```{r}
+# output_dir1 = "../../../data/output/v0412_fix/"
+# dir.create(output_dir1)
+# output_dir1 = paste0(output_dir1,"RPneg/")
+# dir.create(output_dir1)
+# output_dir1 = paste0(output_dir1,"xcms/")
+# dir.create(output_dir1)
+output_dir1 <- "../../data/output/v0412_fix/RPneg/"
+output_dir2 = paste0(output_dir1,"evl_EIC_XIC/")
+dir.create(output_dir2)
+output_dir = output_dir2
+```
+
+
+# Restore the object
+
+```{r}
+# Restore the object
+xdata <- readRDS(file = "../../data/output/v0412_fix/RPneg/xcms/cor_wt_binSize0.02/RPneg_xcms_minFrac07_bw2_ppm1_sum_binSize0.02.rds")
+```
+
+```{r}
+FT <- 722
+mzr <- c(292.9044,292.9142)
+rtr <- c(30,70)
+```
+
+
+# (Optional) If you find overlapped peaks than you can do the XIC to check whether there are overlapped peaks.
+```{r report the ppm of the region}
+ppm <- ((mzr[2]-mzr[1])/mzr[2])*10^6
+ppm
+
+```
+
+# Check the mz_diff that translates to 10 ppm
+```{r}
+ppm2mz_diff <- function(ppm,mz) {
+  return(ppm/(10^6) * mz )
+}
+
+ppm2mz_diff(1, mzr[2]) #10 
+```
+
+```{r message=FALSE, warning=FALSE}
+ppm 
+# if(FALSE) {
+  # pdf(paste0(output_dir,"spectra_row_",row_number,"_rtdiff_",rt_diff,"_with_ppm_of_",ppm,"_spanning_around_the_mz.pdf"))} else {
+  #   pdf(paste0(output_dir,"XIC_","ppm_",ppm,".pdf"))
+  #   }
+par(mar= c(2,7,2,2), mfrow = c(3, 2)) 
+xdata %>%
+    filterFile(9) %>% #11
+    filterRt(rt = rtr) %>%
+    filterMz(mz = mzr) %>%
+    plot(type = "XIC")
+# dev.off()
+```
