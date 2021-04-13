@@ -38,7 +38,7 @@ output_dir1 = paste0(output_dir1,"RPneg/")
 dir.create(output_dir1)
 output_dir1 = paste0(output_dir1,"xcms/")
 dir.create(output_dir1)
-output_dir2 = paste0(output_dir1,"cor_wt_binSize0.02/")
+output_dir2 = paste0(output_dir1,"cor_wt_binSize0.002/")
 dir.create(output_dir2)
 output_dir = output_dir2
 ```
@@ -596,7 +596,7 @@ if(FALSE) {
 
 ## Define the parameters for the peak density method
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.7, bw = 2, binSize = 0.02)
+                        minFraction = 0.7, bw = 2, binSize = 0.002)
 ```
 
 ```{r}
@@ -630,7 +630,7 @@ dev.off()
 ```{r}
 ## Perform the correspondence
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.7, bw = 2, binSize = 0.02)   # Here I use 0.7 to get at least 2 samples have the features.
+                        minFraction = 0.7, bw = 2, binSize = 0.002)   # Here I use 0.7 to get at least 2 samples have the features.
 
 xdata <- groupChromPeaks(xdata, param = pdp)
 ```
