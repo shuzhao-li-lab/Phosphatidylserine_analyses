@@ -3,12 +3,12 @@ rm(list = ls())
 
 library(corrplot)
 
-output_dir = "../../data/output/HILICpos_0402/cleanup_and_stat_test/"
+output_dir = "../../data/output/v0412_fix/HILICpos/feature_summary/"
 if(T) {
   dir.create(output_dir)
 }
 
-df <- read.csv("../../data/output/HILICpos_0402/xcms/featureValues.csv", row.names = 1)
+df <- read.csv("../../data/output/v0412_fix/HILICpos/xcms/cor_wt_binSize0.005/featureValues.csv", row.names = 1)
 View(df)
 # -----------
 

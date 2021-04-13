@@ -3,12 +3,12 @@ rm(list = ls())
 
 library(corrplot)
 
-output_dir = "../../data/output/RPneg_0402/cleanup_and_stat_test/"
+output_dir = "../../data/output/v0412_fix/RPneg/Feature_summary/"
 if(T) {
   dir.create(output_dir)
 }
 
-df <- read.csv("../../data/output/RPneg_0402/xcms/minFrac07/featureValues.csv", row.names = 1)
+df <- read.csv("../../data/output/v0412_fix/RPneg/xcms/cor_wt_binSize0.005/featureValues.csv", row.names = 1)
 
 # -----------
 
