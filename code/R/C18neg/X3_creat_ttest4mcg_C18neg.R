@@ -2,8 +2,13 @@ rm(list = ls())
 
 library(plyr)
 
-xcms_Featab <- read.csv("../../data/output/RPneg_0402/cleanup_and_stat_test/featureValues_summarized_log2scale.csv")
+xcms_Featab <- read.csv("../../data/output/v0412_fix/RPneg/Feature_summary/featureValues_summarized_log2scale.csv")
 head(xcms_Featab)
+
+featDef_df <- read.csv("../../data/output/v0412_fix/RPneg/xcms/cor_wt_binSize0.005/featureDefinitions.csv")
+
+output_dir <- "../../data/output/v0412_fix/RPneg/ttest_equal/"
+dir.create(output_dir)
 
 lf_val <- t(xcms_Featab[,2:ncol(xcms_Featab)]) # lf: long-formatted
 colnames(lf_val) <- xcms_Featab$X
@@ -77,7 +82,6 @@ for (j in 1:length(list_data)) {
 #----------
 
 # read the FT definition and prepare mummichog input; write one complete output & a mummichog input
-featDef_df <- read.csv("../../data/output/RPneg_0402/xcms/minFrac07/featureDefinitions.csv")
 
 colnames(featDef_df)
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
@@ -104,8 +108,7 @@ for (i in 1:length(ttest_res_df_list)) {
 
 ## write the full report, for mummichog with either padj or raw pval
 
-output_dir <- "../../data/output/RPneg_0402/ttest_equal/"
-dir.create(output_dir)
+
 
 colnames(m_featDef_ttest_df_list[[1]])
 # [1] "X"          "mzmed"      "mzmin"      "mzmax"      "rtmed"     

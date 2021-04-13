@@ -2,18 +2,29 @@ rm(list = ls())
 
 library(plyr)
 
-xcms_Featab <- read.csv("../../data/output/HILICpos_0402/cleanup_and_stat_test/featureValues_summarized_log2scale.csv")
+xcms_Featab <- read.csv("../../data/output/v0412_fix/HILICpos/feature_summary/featureValues_summarized_log2scale.csv")
 head(xcms_Featab)
+
+featDef_df <- read.csv("../../data/output/v0412_fix/HILICpos/xcms/cor_wt_binSize0.005/featureDefinitions.csv")
+
+output_dir <- "../../data/output/v0412_fix/HILICpos/ttest_equal/"
+dir.create(output_dir)
 
 lf_val <- t(xcms_Featab[,2:ncol(xcms_Featab)]) # lf: long-formatted
 colnames(lf_val) <- xcms_Featab$X
 lf_val[1:5,1:10]
-# FT0001   FT0002   FT0003   FT0004   FT0005   FT0006
-# G2_R5pos_1 19.80967       NA 17.15374 17.21725 17.94974 22.93556
-# G2_R5pos_2 19.80213       NA 24.08467 17.74124 17.96691 16.19684
-# G2_R5pos_3 19.98046       NA 17.86672 17.79909 17.88582 23.29473
-# G1_Naive_1 19.84599       NA 24.13974 17.97085 18.08051 17.83918
-# G1_Naive_2 19.78193 18.55055 17.62319 18.24213 18.26202 19.20744
+# FT0001   FT0002   FT0003   FT0004   FT0005   FT0006   FT0007   FT0008
+# G1_Naive_1 27.12752 19.70765       NA 24.13974 17.95940 17.95533 18.08051 20.85117
+# G1_Naive_2 27.14847 19.83852 18.49324 24.15012 17.62319 18.24213 18.26202 20.98933
+# G1_Naive_3 27.40228 19.98658       NA 24.23105 18.06375 18.37114 18.28269 21.07579
+# G2_R5pos_1 27.08312 19.68654       NA 23.87954 17.15374 17.21725 17.94974 19.28171
+# G2_R5pos_2 27.07956 19.94450       NA 24.08440 17.56926 17.74124 17.96691 20.26164
+# FT0009   FT0010
+# G1_Naive_1 23.27666 17.83918
+# G1_Naive_2 23.55752 19.20744
+# G1_Naive_3 23.65402 18.10398
+# G2_R5pos_1 22.93556       NA
+# G2_R5pos_2 23.14610       NA
 
 if(F) { # If log2 scale was not done
   lf_log2_val <- log(lf_val,2)
@@ -71,7 +82,6 @@ for (j in 1:length(list_data)) {
 #----------
 
 # read the FT definition and prepare mummichog input; write one complete output & a mummichog input
-featDef_df <- read.csv("../../data/output/HILICpos_0402/xcms/featureDefinitions.csv")
 colnames(featDef_df)
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
 # [12] "ms_level"
@@ -97,8 +107,6 @@ for (i in 1:length(ttest_res_df_list)) {
 
 ## write the full report, for mummichog with either padj or raw pval
 
-output_dir <- "../../data/output/HILICpos_0402/ttest_equal/"
-dir.create(output_dir)
 
 colnames(m_featDef_ttest_df_list[[1]])
 # [1] "X"        "mzmed"    "mzmin"    "mzmax"    "rtmed"    "rtmin"    "rtmax"    "npeaks"   "G1_Naive" "G2_R5pos" "G3_R5neg"
