@@ -27,11 +27,11 @@ library(ggplot2)
 
 ```{r}
 getwd()
-output_dir = "../../../data/output/RPneg_0402/filt_incl_list/"
+output_dir = "../../../data/output/v0412_fix/RPneg/filt_incl_list/"
 dir.create(output_dir)
 
 # load statistical test full report
-ttest_df <- read.table("../../../data/output/RPneg_0402/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", 
+ttest_df <- read.table("../../../data/output/v0412_fix/RPneg/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", 
                        header = TRUE, sep = '\t')
 ttest_df[1:5,1:5]
 colnames(ttest_df)
@@ -72,7 +72,7 @@ nrow(ttest_df)
 nrow(ttest_df[ttest_df$pval < pval_thre & ttest_df$Median > Med_thre,])
 nrow(ttest_df[ttest_df$padj < pval_thre & ttest_df$Median > Med_thre,])
 ```
-- I decide to go with padj < 0.05 & Median of integrated intensity > 100,000 which include 307 to trim down.
+- I decide to go with padj < 0.05 & Median of integrated intensity > 100,000 which include 345 to trim down.
 
 ### First set of filtering
 ```{r}
@@ -96,16 +96,16 @@ colnames(filt_df)
 ```
 
 ```{r}
-colnames(filt_df)[13:15] #G2
-colnames(filt_df)[16:18] #G1
+colnames(filt_df)[13:15] #G1
+colnames(filt_df)[16:18] #G2
 colnames(filt_df)[19:21] #G3
 ```
 
 
 ### calculate mean and log2Fold change
 ```{r}
-filt_df$mean_G1 <- rowMeans(filt_df[,16:18], na.rm = TRUE)
-filt_df$mean_G2 <- rowMeans(filt_df[,13:15], na.rm = TRUE)
+filt_df$mean_G1 <- rowMeans(filt_df[,13:15], na.rm = TRUE)
+filt_df$mean_G2 <- rowMeans(filt_df[,16:18], na.rm = TRUE)
 filt_df$mean_G3 <- rowMeans(filt_df[,19:21], na.rm = TRUE)
 filt_df$log2FC_R5posvsR5neg <- filt_df$mean_G2 - filt_df$mean_G3
 filt_df$log2FC_R5posvsNaive <- filt_df$mean_G2 - filt_df$mean_G1
@@ -126,7 +126,7 @@ length(unique(filt2_df$X))
 
 ```{r}
 
-p_or_padj <- "rawPval" #padj rawPval; change the $pval as well
+p_or_padj <- "padj" #padj rawPval; change the $pval as well
 file_key <- "ttest_R5posvsR5neg"
 
 #These parameters should have been set before.
@@ -139,7 +139,21 @@ write.csv(filt2_df,paste0(output_dir,"filt_med_",as.character(Med_thre),"_", p_o
 
 ```
 
+### (Supplementary) Sort the table
+```{r}
+colnames(filt2_df)
+dim(filt2_df)
+```
 
+```{r}
+filt2_df$abs_log2FC_R5posvsR5neg <- abs(filt2_df$log2FC_R5posvsR5neg)
+s_filt2_df <- filt2_df %>% 
+                arrange(desc(Median),desc(abs_log2FC_R5posvsR5neg), padj)
+
+write.csv(s_filt2_df,paste0(output_dir,"sorted_filt_med_",as.character(Med_thre),"_", p_or_padj,"_",as.character(pval_thre),"_FC_",as.character(FC_thres),"_",file_key,".csv"), row.names = FALSE)
+    
+                
+```
 ## Next step (optional and it is not that important seems to be!)
 - merge it with mummichog output so that we may get some sorts of annotated information. (optional)
 - Finally we will put these feature `FT###` into `featureChromatograms` to visualize the peaks.

@@ -27,11 +27,11 @@ library(ggplot2)
 
 ```{r}
 getwd()
-output_dir = "../../../data/output/HILICpos_0402/filt_incl_list/"
+output_dir = "../../../data/output/v0412_fix/HILICpos/filt_incl_list/"
 dir.create(output_dir)
 
 # load statistical test full report
-ttest_df <- read.table("../../../data/output/HILICpos_0402/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", 
+ttest_df <- read.table("../../../data/output/v0412_fix/HILICpos/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", 
                        header = TRUE, sep = '\t')
 ttest_df[1:5,1:5]
 colnames(ttest_df)
@@ -96,16 +96,16 @@ colnames(filt_df)
 ```
 
 ```{r}
-colnames(filt_df)[13:15] #G2
-colnames(filt_df)[16:18] #G1
+colnames(filt_df)[13:15] #G1
+colnames(filt_df)[16:18] #G2
 colnames(filt_df)[19:21] #G3
 ```
 
 
 ### calculate mean and log2Fold change
 ```{r}
-filt_df$mean_G1 <- rowMeans(filt_df[,16:18], na.rm = TRUE)
-filt_df$mean_G2 <- rowMeans(filt_df[,13:15], na.rm = TRUE)
+filt_df$mean_G1 <- rowMeans(filt_df[,13:15], na.rm = TRUE)
+filt_df$mean_G2 <- rowMeans(filt_df[,16:18], na.rm = TRUE)
 filt_df$mean_G3 <- rowMeans(filt_df[,19:21], na.rm = TRUE)
 filt_df$log2FC_R5posvsR5neg <- filt_df$mean_G2 - filt_df$mean_G3
 filt_df$log2FC_R5posvsNaive <- filt_df$mean_G2 - filt_df$mean_G1
@@ -137,6 +137,21 @@ write.csv(filt2_df,paste0(output_dir,"filt_med_",as.character(Med_thre),"_", p_o
           
           
 
+```
+
+### (Supplementary) Sort the table
+```{r}
+colnames(filt2_df)
+```
+
+```{r}
+filt2_df$abs_log2FC_R5posvsR5neg <- abs(filt2_df$log2FC_R5posvsR5neg)
+s_filt2_df <- filt2_df %>% 
+                arrange(desc(Median),desc(abs_log2FC_R5posvsR5neg), padj)
+
+write.csv(s_filt2_df,paste0(output_dir,"sorted_filt_med_",as.character(Med_thre),"_", p_or_padj,"_",as.character(pval_thre),"_FC_",as.character(FC_thres),"_",file_key,".csv"), row.names = FALSE)
+    
+                
 ```
 
 
