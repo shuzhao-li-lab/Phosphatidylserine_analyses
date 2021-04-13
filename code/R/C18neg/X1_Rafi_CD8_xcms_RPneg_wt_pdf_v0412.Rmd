@@ -17,6 +17,7 @@ knitr::opts_chunk$set(error = TRUE)
 ```
 
 ```{r, include=FALSE}
+rm(list = ls())
 library(xcms)
 library(RColorBrewer)
 library(pander)
@@ -33,9 +34,11 @@ getwd()
 ```{r}
 output_dir1 = "../../../data/output/v0412_fix/"
 dir.create(output_dir1)
-output_dir1 = "../../../data/output/v0412_fix/RPneg/"
+output_dir1 = paste0(output_dir1,"RPneg/")
 dir.create(output_dir1)
-output_dir2 = "../../../data/output/v0412_fix/RPneg/xcms/"
+output_dir1 = paste0(output_dir1,"xcms/")
+dir.create(output_dir1)
+output_dir2 = paste0(output_dir1,"cor_wt_binSize0.02/")
 dir.create(output_dir2)
 output_dir = output_dir2
 ```
@@ -445,9 +448,9 @@ pandoc.table(
 plotChromPeaks(xdata, file = 1)
 
 if(TRUE) {
-    pdf(paste(output_dir,"mz_rt_location_of_id_chrom_pks.pdf", sep = ""))
+  pdf(paste(output_dir,"mz_rt_location_of_id_chrom_pks.pdf", sep = ""))
   par(mfrow = c(3, 3))  # 3 rows and 3 columns
-  for (i in 1:length(xdata$sample_name) {
+  for (i in 1:length(xdata$sample_name)) {
     plotChromPeaks(xdata, file = i)
   }
   dev.off()
@@ -593,7 +596,7 @@ if(FALSE) {
 
 ## Define the parameters for the peak density method
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.7, bw = 2)
+                        minFraction = 0.7, bw = 2, binSize = 0.02)
 ```
 
 ```{r}
@@ -627,7 +630,7 @@ dev.off()
 ```{r}
 ## Perform the correspondence
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group,
-                        minFraction = 0.7, bw = 2)   # Here I use 0.7 to get at least 2 samples have the features.
+                        minFraction = 0.7, bw = 2, binSize = 0.02)   # Here I use 0.7 to get at least 2 samples have the features.
 
 xdata <- groupChromPeaks(xdata, param = pdp)
 ```
@@ -755,7 +758,7 @@ dev.off()
 # Save the XCMS R object
 ```{r}
 # Save an object to a file
-saveRDS(xdata, file = paste(output_dir,"RPneg_xcms_minFrac07_bw2_ppm1_sum.rds",sep = ""))
+saveRDS(xdata, file = paste(output_dir,"RPneg_xcms_minFrac07_bw2_ppm1_sum_binSize0.02.rds",sep = ""))
 # Restore the object
 #readRDS(file = "my_data.rds")
 ```
