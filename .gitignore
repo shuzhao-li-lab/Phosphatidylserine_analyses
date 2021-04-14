@@ -5,7 +5,7 @@ references/*
 .Rhistory
 R.Rproj
 .RData
-*/.html
+*.html
 
 # exclude data from source control by default
 data/*

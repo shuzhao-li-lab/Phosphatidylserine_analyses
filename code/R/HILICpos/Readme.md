@@ -20,6 +20,8 @@
 ## Steps
 ### XCMS, QC, summarization and mummichog
 1. XCMS analysis: code/R/HILICpos/Rafi_CD8_xcms_HILICpos_wt_pdf_v0402.Rmd
+- 49595 detected
+- Merging reduced 49595 chromPeaks to 41776.
 2. Further QC and summarization: code/R/HILICpos/featureSummary_HILICpos.R
 
 3. Statistical test (here t-test): code/R/HILICpos/creat_ttest4mcg_HILICpos_equa_var_t_test.R

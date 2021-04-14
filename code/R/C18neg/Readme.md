@@ -20,6 +20,10 @@
 ## Steps
 ### XCMS, QC, summarization and mummichog
 1. XCMS analysis: code/R/C18neg/X1_Rafi_CD8_xcms_RPneg_wt_pdf.Rmd
+- 32726
+- Merging reduced 32726 chromPeaks to 25018.
+- Processing 1032060 mz slices ... OK (binSize = 0.002)
+
 2. Further QC and summarization: code/R/C18neg/X2_featureSummary_C18neg.R
 
 3. Statistical test (here t-test): code/R/C18neg/X3_creat_ttest4mcg_C18neg.R
