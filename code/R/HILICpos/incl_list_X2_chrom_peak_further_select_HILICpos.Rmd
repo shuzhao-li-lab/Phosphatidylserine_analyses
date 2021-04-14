@@ -28,8 +28,8 @@ getwd()
 
 if(TRUE) {
   # When you want to reexamine certain peaks, and this provides the entry to reload xdata object.
-  xdata <- readRDS("../../../data/output/v0412_fix/RPneg/xcms/cor_wt_binSize0.005/RPneg_xcms_minFrac07_bw2_ppm1_sum_binSize0.005.rds")
-  output_dir <- "../../../data/output/v0412_fix/RPneg/incl_list_chromPeak/"
+  xdata <- readRDS("../../../data/output/v0412_fix/HILICpos/xcms/cor_wt_binSize0.005/HILICpos_xcms_minFrac07_bw2_ppm1_sum_binSize0.005.rds")
+  output_dir <- "../../../data/output/v0412_fix/HILICpos/incl_list_chromPeak/"
   dir.create(output_dir)
 }
 
@@ -39,7 +39,7 @@ if(TRUE) {
 ## load the inclusion list previously generated.
 
 ```{r}
-incl_l <- read.csv("../../../data/output/v0412_fix/RPneg/filt_incl_list/sorted_filt_med_16.6_padj_0.05_FC_2_ttest_R5posvsR5neg.csv", header = TRUE)
+incl_l <- read.csv("../../../data/output/v0412_fix/HILICpos/filt_incl_list/sorted_filt_med_16.6_padj_0.05_FC_2_ttest_R5posvsR5neg.csv", header = TRUE)
 colnames(incl_l)
 ```
 
@@ -54,9 +54,9 @@ if(FALSE) {
                              substring(incl_l$compound_name, 1, 80), "\n" ,
                              substring(incl_l$pathway_collapsed_clean,1,80))
 } else {
-  incl_l$sub_title <- paste0(incl_l$X ,"; R5posvsR5neg log2FC = ",incl_l$log2FC_R5posvsR5neg,
-                                             "; R5posvsNaive log2FC = ",incl_l$log2FC_R5posvsNaive,
-                                             "; R5begvsNaive log2FC = ",incl_l$log2FC_R5negvsNaive)
+  incl_l$sub_title <- paste0(incl_l$X ,"; posvsneg log2FC = ",round(incl_l$log2FC_R5posvsR5neg,2),
+                                             "; posvsNai log2FC = ",round(incl_l$log2FC_R5posvsNaive,2),
+                                             "; negvsNai log2FC = ",round(incl_l$log2FC_R5negvsNaive),2)
 }
 
 ```
