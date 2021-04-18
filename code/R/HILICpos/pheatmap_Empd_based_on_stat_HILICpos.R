@@ -6,24 +6,36 @@ library(tidyr)
 library(dplyr)
 
 # output directory create
-output_dir <- "../../data/output/HILICpos_0402/heatmaps_based_on_mcg_res/"
+output_dir <- "../../data/output/v0412_fix/HILICpos/heatmaps_based_on_mcg_res/"
 dir.create(output_dir)
-key_name <- paste("HILICpos_R5posvsR5neg","mcg_padj05","FTpadj05", sep = "_")
+
+# Set mcg permutation p-value threshold
+# mcg_pval_thres <- 0.05 # default
+mcg_pval_thres <- 0.05
+
+# Set the FT
+FT_padj_threshold <- 0.05
+
+only_abundant_adduct <- TRUE
+
+key_name <- paste("HILICpos_R5posvsR5neg","mcgpadj",mcg_pval_thres ,"FTpadj",FT_padj_threshold,"adduct_abundant",only_abundant_adduct, sep = "_")
 
 
 # read tables
 
-mcg_res_fdr <- "../../data/output/HILICpos_0402/mcg/R5posvsR5neg/1617477069.6563442.mcg_HILICpos_padj_0.05_R5posvsR5neg/"
+mcg_res_fdr <- "../../data/output/v0412_fix/HILICpos/mcg_HILICpos/R5posvsR5neg/1618781765.861877.mcg_HILICpos_padj_0.05_R5posvsR5neg/"
 lofCpd_df <- read.table(paste(mcg_res_fdr,"tables/ListOfEmpiricalCompounds.tsv",sep = ""), 
                         sep = "\t", header = 1, quote = "\"")
 
-lofPathway_df <- read.table(paste(mcg_res_fdr,"tables/mcg_pathwayanalysis_mcg_HILICpos_padj_default_R5posvsR5neg.tsv",sep = ""), 
+lofPathway_df <- read.table(paste(mcg_res_fdr,"tables/mcg_pathwayanalysis_mcg_HILICpos_padj_0.05_R5posvsR5neg.tsv",sep = ""), 
                         sep = "\t", header = 1, quote = "\"") 
 
 
-featab <- read.csv("../../data/output/HILICpos_0402/cleanup_and_stat_test/featureValues_summarized_log2scale.csv")
+featab <- read.csv("../../data/output/v0412_fix/HILICpos/feature_summary/featureValues_summarized_log2scale.csv")
 
-ttest_res_df <- read.table("../../data/output/HILICpos_0402/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", header = 1)
+ttest_res_df <- read.table("../../data/output/v0412_fix/HILICpos/ttest_equal/ttest_res_full_report_R5posvsR5neg.txt", header = 1)
+
+
 
 # Examine the loaded tables
 
@@ -68,17 +80,18 @@ lofCpd_df_clean[1:5,]
 #                                       5 E15   FT0030           row30_M+H[1+] CE1950             cyanosulfurous acid anion           M+H[1+] 
 
 #Look at the lofPathway_df to determine the proper threshold and other pathways of interest.
-View(lofPathway_df) # You can drag to another monitor for better visualization
+# View(lofPathway_df) # You can drag to another monitor for better visualization
 
-# Set mcg permutation p-value threshold
-# mcg_pval_thres <- 0.05 # default
-mcg_pval_thres <- 0.11
 
 # Processing lofPathway_df
-path_list_of_interest <- c("Arginine and Proline Metabolism",
-                           "Urea cycle/amino group metabolism",
-                           "De novo fatty acid biosynthesis",
-                           "Urea cycle/amino group metabolism")
+path_list_of_interest <- c("Glycolysis and Gluconeogenesis",
+                           "Glycine, serine, alanine and threonine metabolism",
+                           "Aspartate and asparagine metabolism",
+                           "Arginine and Proline Metabolism",
+                           "Glycerophospholipid metabolism",
+                           "Methionine and cysteine metabolism",
+                           "Tryptophan metabolism",
+                           "Pentose phosphate pathway")
                            # "Leukotriene metabolism",
                            # "Fatty Acid Metabolism",
                            # "Glycerophospholipid metabolism",
@@ -138,15 +151,20 @@ dim(mmm_df)
 
 # Set maximum length to avoid overload the page for both pathway and metabolite name
 maxLength = 80
-mmm_df$cbn_name <- substring(paste0(mmm_df$X, mmm_df$compound_names,sep = "_"),1,maxLength)
-mmm_df$cbn_name <- paste(mmm_df$X, mmm_df$cbn_name, sep = "|")
+mmm_df$cbn_name <- substring(paste(mmm_df$X, mmm_df$compound_names,sep = "|"),1,maxLength)
 
-mmm_df$pathway_collapsed_clean <- substring(mmm_df$pathway_collapsed_clean,1,maxLength)
+## Add a choice to smplify the result.
+if(FALSE) {
+  mmm_df$pathway_collapsed_clean <- substring(mmm_df$pathway_collapsed_clean,1,maxLength)
+} else {
+  mmm_df$pathway_collapsed_clean <- sapply(mmm_df$pathway_collapsed_clean, function(x)strsplit(x, ";")[[1]][1])
+}
+
 
 row.names(mmm_df) <- mmm_df$cbn_name
 colnames(mmm_df)
 
-filt_m_df <- mmm_df[mmm_df$padj < 0.05,]  # pval
+filt_m_df <- mmm_df[mmm_df$padj < FT_padj_threshold,]  # pval
 colnames(filt_m_df)
 # [1] "EID"                     "X"                       "mzmed"                  
 # [4] "mzmin"                   "mzmax"                   "rtmed"                  
@@ -162,13 +180,21 @@ colnames(filt_m_df)
 
 ## Carefully check the samples you want to include in the heatmap. Each time will be different!
 
-HT <- filt_m_df[,c(14:16,20:22)] #
+colnames(filt_m_df)[c(17:19,20:22)]
+# [1] "G2_R5pos_1" "G2_R5pos_2" "G2_R5pos_3" "G3_R5neg_1" "G3_R5neg_2" "G3_R5neg_3"
+
+HT <- filt_m_df[,c(17:19,20:22)] # Remeber to change accordingly!
 annot_row <- filt_m_df %>% select(adduct_type, pathway_collapsed_clean)
 row.names(annot_row) <- row.names(filt_m_df)
 colnames(annot_row) <- c("adduct", "pathways")
 
 adduct_vec <- c("M+H[1+]","M+Na[1+]")    # c("M-H2O-H[-]","M-H[-]", "M-2H[2-]")
 annot_row$adduct[!(annot_row$adduct %in% adduct_vec)] = ""
+if(only_abundant_adduct) {
+  HT <- HT[(annot_row$adduct %in% adduct_vec),]
+  annot_row <- annot_row[(annot_row$adduct %in% adduct_vec),]
+}
+
 
 log2HT <- log(HT,2) #
 
@@ -209,7 +235,7 @@ mat_breaks <- seq(min(z_transformed), max(z_transformed), length.out = 1)
 out_pdf_file = paste0(output_dir, key_name,".pdf")  #change the number
 
 
-pdf(file=out_pdf_file, width =30,height=10, paper = "special",onefile=FALSE)
+pdf(file=out_pdf_file, width =30,height=30, paper = "special",onefile=FALSE)
 # Either z_transformed or HT #
 pheatmap(z_transformed, cluster_rows = TRUE, show_rownames = TRUE, cluster_cols = TRUE, 
          annotation_col = annotation_col, annotation_row = annot_row, clustering_method = "complete", breaks = breaksList, color = cell_colors, cellwidth = 10, cellheight = 10) 
