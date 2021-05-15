@@ -257,6 +257,12 @@ dim(filt_m_df)
 
 - Carefully check the samples you want to include in the heatmap. Each time will be different!
 
+## Write the table of the filtered result
+```{r}
+write.csv(filt_m_df, paste0(output_dir, key_name,"full_table.csv"))
+```
+
+
 
 ```{r}
 colnames(filt_m_df)[c(17:19,20:22)]
@@ -292,6 +298,8 @@ if(FALSE) {
 }
 
 ```
+
+
 
 
 ```{r}
