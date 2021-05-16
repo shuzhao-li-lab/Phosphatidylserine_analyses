@@ -29,7 +29,11 @@ library(ggplot2)
 
 ```{r}
 getwd()
-output_dir = "../../../../data/output/v0412_fix/HILICpos/filt_incl_list/"
+output_dir = "../../../../data/output/MS2_Spectra_massbank_match_05152021/"
+dir.create(output_dir)
+output_dir = "../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/"
+dir.create(output_dir)
+output_dir = "../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/Significant_list/"
 dir.create(output_dir)
 
 # load statistical test full report
@@ -91,7 +95,7 @@ dim(filt_df)
 ### Read the table if needed.
 ```{r}
 if(FALSE) {
-  filt_df <- read.csv("../../../data/output/HILICpos_0331analysis/X4_incl_list_merge_wt_hmdb/merged_hmdb_mcg_fit_inclusion_list.csv", header = TRUE)
+  filt_df <- read.csv("../../../../data/output/HILICpos_0331analysis/X4_incl_list_merge_wt_hmdb/merged_hmdb_mcg_fit_inclusion_list.csv", header = TRUE)
 }
 
 colnames(filt_df)
@@ -117,7 +121,7 @@ summary(filt_df$log2FC_R5posvsR5neg)
 
 ### filtering by log2FC of R5posvsR5neg
 ```{r}
-FC_thres <- 2
+FC_thres <- 1
 filt2_df <- filt_df[filt_df$log2FC_R5posvsR5neg > log(FC_thres,2) | 
                     filt_df$log2FC_R5posvsR5neg < -log(FC_thres,2), ]
 length(unique(filt2_df$X))

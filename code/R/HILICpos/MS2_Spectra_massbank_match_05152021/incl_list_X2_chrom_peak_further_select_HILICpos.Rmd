@@ -28,8 +28,8 @@ getwd()
 
 if(TRUE) {
   # When you want to reexamine certain peaks, and this provides the entry to reload xdata object.
-  xdata <- readRDS("../../../data/output/v0412_fix/HILICpos/xcms/cor_wt_binSize0.005/HILICpos_xcms_minFrac07_bw2_ppm1_sum_binSize0.005.rds")
-  output_dir <- "../../../data/output/v0412_fix/HILICpos/incl_list_chromPeak/"
+  xdata <- readRDS("../../../../data/output/v0412_fix/HILICpos/xcms/cor_wt_binSize0.005/HILICpos_xcms_minFrac07_bw2_ppm1_sum_binSize0.005.rds")
+  output_dir <- "../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/Sign_list_chromPeak/"
   dir.create(output_dir)
 }
 
@@ -39,7 +39,7 @@ if(TRUE) {
 ## load the inclusion list previously generated.
 
 ```{r}
-incl_l <- read.csv("../../../data/output/v0412_fix/HILICpos/filt_incl_list/sorted_filt_med_16.6_padj_0.05_FC_2_ttest_R5posvsR5neg.csv", header = TRUE)
+incl_l <- read.csv("../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/Significant_list/sorted_filt_med_16.6_padj_0.05_FC_1_ttest_R5posvsR5neg.csv", header = TRUE)
 colnames(incl_l)
 ```
 
