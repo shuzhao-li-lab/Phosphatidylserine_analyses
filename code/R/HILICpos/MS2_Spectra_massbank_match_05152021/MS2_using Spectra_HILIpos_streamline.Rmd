@@ -1,8 +1,9 @@
 ---
 title: "MS2DDA_analysis_wt_Spectra_streamline_process"
 author: "Minghao Gong"
-date: "5/9/2021"
-enhancement: filtering on retention time range & try on real tables.
+date: "5/15/2021"
+functionality: "massbank match wt DDA-MS2 data; also added hmdb"
+note: "Don't do retention range as they are run in different system"
 output: html_document
 ---
 
@@ -40,16 +41,14 @@ getwd()
 
 
 ```{r}
-output_dir1 = "../../../../output/MS2_out/HILICpos"
+output_dir1 = "../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/massbank_search_agst_Sign_list/"
 dir.create(output_dir1)
-output_dir2 = "../../../../output/MS2_out/HILICpos/MS2_spectra_streamlined/"
-dir.create(output_dir2)
-output_dir = output_dir2
+output_dir = output_dir1
 ```
 
 ## Get the full path to the mzML files of HILICpos and load the data
 ```{r, results=TRUE}
-path <- "../../../../../Raw_fromYating/mzML/HILICpos_DDA_exp" # without the final /
+path <- "../../../../data/input/04282021_Rafi_HILIC_pos_AX_DeepScan/mzML/ddMS2_scan/" # without the final /
 
 list.files(path, pattern = ".mzML")
 
@@ -89,7 +88,7 @@ sps_all$precursorIntensity <- pints
 ```
 
 ```{r}
-sps_all$precursorIntensity[1:20]
+sps_all$precursorIntensity[1:200]
 ```
 
 ```{r}
@@ -109,7 +108,8 @@ print(object.size(sps_all), units = "MB")
 
 ### Check the DDA running procedure (Optional)
 ```{r}
-sps_all$msLevel[1:40]
+sps_all$msLevel[1:200]
+unique(sps_all$msLevel)
 ```
 
 
@@ -126,7 +126,7 @@ saveRDS(sps_ms2, file = paste0(output_dir,"sps_ms2_SpecObject_wt_PreInt.RDS"))
 
 ```{r read sps_ms2 if needed}
 if(TRUE) {
-  sps_ms2 <- readRDS("../../../../output/MS2_out/HILICpos/MS2_spectra_streamlined/sps_ms2_SpecObject_wt_PreInt.RDS")
+  sps_ms2 <- readRDS("../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/massbank_search_agst_Sign_list/sps_ms2_SpecObject_wt_PreInt.RDS")
 }
 ```
 
@@ -135,7 +135,7 @@ if(TRUE) {
 ```{r}
 # get a list of Features (r/t median and RT range)
 # FT_test_df <- read.csv("../../../../input/test4MS2_streamline_analysis/featureDefinitions_subset4test.csv")
-FT_test_df <- read.csv("../../../../input/test4MS2_streamline_analysis/JAXrun0413_first_analysis_outcome/sorted_filt_med_16.6_RawPval_0.05_FC_1.5_ttest_combined.csv")
+FT_test_df <- read.csv("../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/Significant_list/sorted_filt_med_16.6_padj_0.05_FC_1_ttest_R5posvsR5neg.csv")
 FT_test_df
 ```
 
@@ -158,7 +158,7 @@ for (j in 1:length(precursor_candidate_l)) {
   sps_ms2based_on_pre_candid_l[[j]] <- filterPrecursorMz(sps_ms2, mz = mz + ppm(c(-mz, mz), 2))
   # print(j)
   rt_range <- rt_candidate_l[[j]]
-  sps_ms2based_on_pre_candid_l[[j]] <- filterRt(sps_ms2based_on_pre_candid_l[[j]], rt = c(rt_range[1]-20,rt_range[2]+20))
+  sps_ms2based_on_pre_candid_l[[j]] <- filterRt(sps_ms2based_on_pre_candid_l[[j]], rt = c(rt_range[1]-300,rt_range[2]+300)) #no retention selection so using 300
   
 }
 
@@ -179,6 +179,8 @@ sapply(sps_ms2based_on_pre_candid_l, function(x)length(x))
 ```
 
 ```{r Export the spectra of interest to a MGF file}
+library(MsBackendMgf)
+
 # Export the spectra of interest to a MGF file
 output_dir_mgf <- paste0(output_dir, "spectra_mgf/")
 dir.create(output_dir_mgf)
@@ -236,7 +238,7 @@ if(TRUE) {
 
 ```{r raw-ms2-filtered, fig.width = 7, fig.height = 7}
 #' Plot the first spectrum after filtering
-plotSpectra(sps_ms2filt_norm_l[[11]][1:4])
+# plotSpectra(sps_ms2filt_norm_l[[11]][1:4])
 ```
 
 ```{r normalize}
@@ -367,6 +369,8 @@ print(object.size(mbank), units = "MB")
 res_l = list()
 idx_l <- list()
 sps_final_l <- list()
+max_score_l <- list()
+threshold <- 0.4
 for (i in (1:length(sps_select_l))) { 
   has_mz <- containsMz(mbank, mz = mean(sps_select_l[[i]]$precursorMz), ppm = 10)
   mbank_with_mz <- mbank[has_mz]
@@ -378,8 +382,8 @@ for (i in (1:length(sps_select_l))) {
 
   }
 
-  #' find the best one if it pass 0.7, else drop the loop
-  if(max(res_l[[i]]) > 0.7) {
+  #' find the best one if it pass threshold, else drop the loop
+  if(max(res_l[[i]]) > threshold) {
     idx_l[[i]] <- which(res_l[[i]] == max(res_l[[i]]), arr.ind = TRUE)
     print(idx_l[[i]])
     print(max(res_l[[i]]))
@@ -399,7 +403,7 @@ for (i in (1:length(sps_select_l))) {
     idx <- idx_l[[i]]
     sps_select <- sps_select_l[[i]]
 
-    #' plot and export the best matching if passing dot-plot score > 0.7.
+    #' plot and export the best matching if passing dot-plot score > threshold.
     pdf(paste0(output_dir,"mirror_plot_","JAX_1stDryAnal","_spsSelectMz_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".pdf"))
     plotSpectraMirror(sps_select[idx[1]], mbank_with_mz[idx[2]], tolerance = 0.2,
                     labels = label_fun, labelPos = 2, labelOffset = 0.2,
@@ -409,17 +413,17 @@ for (i in (1:length(sps_select_l))) {
   }
 
   #' get the mbank spectra object.
-  if(max(res_l[[i]]) > 0.7) {mbank_best_match <- mbank_with_mz[idx[2]]}
+  if(max(res_l[[i]]) > threshold) {mbank_best_match <- mbank_with_mz[idx[2]]}
 
   #' export the scoring matrix & the annotations from massbank
   #'' get mark of massbank
-  if(max(res_l[[i]]) > 0.7) {
+  if(max(res_l[[i]]) > threshold) {
     sps_final_l[[i]] <- sps_select[idx[1]]
   sps_final_l[[i]]$candidate_source <- "massbank"
   }
   
   #'' export those that have best matched.
-  if(max(res_l[[i]]) > 0.7) {
+  if(max(res_l[[i]]) > threshold) {
     sps_final_l[[i]]$mbank_candidate_score <- max(res_l[[i]])
     sps_final_l[[i]]$mbank_candidate_mbank_id <- mbank_best_match$spectrum_id
     sps_final_l[[i]]$mbank_candidate_name <- mbank_best_match$compound_name
@@ -431,12 +435,17 @@ for (i in (1:length(sps_select_l))) {
   # sps_final_l[[i]]$scoring_mtx_mbank_Id <- names(res_l[[i]][idx[1],])
   # sps_final_l[[i]]$scoring_mtx_score <- as.numeric(res_l[[i]][idx[1],])
   
+   #' testing the outcome
+  max_score_l[[i]] <- max(res_l[[i]])
+  print(max(res_l[[i]]))
+  print(i)
+  
   library(MsBackendMgf)
 
   #' Export the spectra to a MGF file
-  if(max(res_l[[i]]) > 0.7) {
+  if(max(res_l[[i]]) > threshold) {
     print("yes")
-    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"mbank_matched_wt_score0.7more_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".mgf"))
+    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"mbank_matched_wt_score_", round(max(res_l[[i]]),4),"more_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".mgf"))
   }
 }
 
@@ -451,4 +460,114 @@ for (i in (1:length(sps_select_l))) {
 spectraVariables(mbank_with_mz)
 ```
 
+
+
+# Match with HMDB
+```{r get all hmdb data}
+
+library(MsBackendHmdb)
+
+#' Get all MS2 spectra xml files and import data
+if(FALSE) {
+  fls <- dir("/home/rstudio/data/ hmdb_all_spectra/", full.names = TRUE, pattern = "ms_ms")
+hmdb <- Spectra(fls, source = MsBackendHmdbXml(), nonStop = TRUE)
+} else {
+  load("/home/rstudio/data/hmdb.RData") # The RData will be loaded as hmdb
+}
+
+```
+
+
+```{r comparing with hmdb}
+register(SerialParam())
+output_dir = "../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/massbank_search_agst_Sign_list/hmdb_matches_0.4/"
+dir.create(output_dir)
+#' Identify spectra that contain a peak matching the precursorMz m/z of interest
+res_l = list()
+idx_l <- list()
+sps_final_l <- list()
+max_score_l <- list()
+threshold = 0.4
+for (i in (1:length(sps_select_l))) { 
+  has_mz <- containsMz(hmdb, mz = mean(sps_select_l[[i]]$precursorMz), ppm = 10)
+  hmdb_with_mz <- hmdb[has_mz]
+  res_l[[i]] <- Spectra::compareSpectra(sps_select_l[[i]], hmdb_with_mz, ppm = 5)
+  
+  if (is.null(nrow(res_l[[i]]))) {
+    res_l[[i]] <- t(as.matrix(res_l[[i]]))
+    colnames(res_l[[i]]) <- hmdb_with_mz$spectrum_id
+
+  }
+  
+  
+  #' find the best one if it pass threshold (e.g., 0.7), else drop the loop
+  if(max(res_l[[i]]) > threshold) {
+    idx_l[[i]] <- which(res_l[[i]] == max(res_l[[i]]), arr.ind = TRUE)
+    print(idx_l[[i]])
+    print(max(res_l[[i]]))
+    #intensity(hmdb_with_mz[idx[2]])
+
+    #' *Normalize* the HMDB data (if needed)
+      # hmdb_with_mz <- addProcessing(hmdb_with_mz, norm_int)
+      # This function is not required if load Rdata, which has been normalized already.
+
+    #' Specifying a function to draw peak labels
+    label_fun <- function(x) {
+        ints <- unlist(intensity(x))
+        mzs <- format(unlist(mz(x)), digits = 4)
+        mzs[ints < 5] <- ""
+        mzs
+    }
+
+    idx <- idx_l[[i]]
+    sps_select <- sps_select_l[[i]]
+
+    #' plot and export the best matching if passing dot-plot score > threshold.
+    pdf(paste0(output_dir,"mirror_plot_","JAX_1stDryAnal","_spsSelectMz_",sps_select[idx[1]]$precursorMz, "_hmdbID_",hmdb_with_mz[idx[2]]$spectrum_id,".pdf"))
+    plotSpectraMirror(sps_select[idx[1]], hmdb_with_mz[idx[2]], tolerance = 0.2,
+                    labels = label_fun, labelPos = 2, labelOffset = 0.2,
+                    labelSrt = -30)
+    grid()
+    dev.off()
+  }
+
+  #' get the hmdb spectra object.
+  if(max(res_l[[i]]) > threshold) {hmdb_best_match <- hmdb_with_mz[idx[2]]}
+
+  #' export the scoring matrix & the annotations from hmdb
+  #'' get mark of hmdb
+  if(max(res_l[[i]]) > threshold) {
+    sps_final_l[[i]] <- sps_select[idx[1]]
+  sps_final_l[[i]]$candidate_source <- "hmdb"
+  }
+  
+  #'' export those that have best matched.
+  if(max(res_l[[i]]) > threshold) {
+    sps_final_l[[i]]$hmdb_candidate_score <- max(res_l[[i]])
+    sps_final_l[[i]]$hmdb_candidate_hmdb_id <- hmdb_best_match$compound_id
+    sps_final_l[[i]]$hmdb_candidate_predicted <- hmdb_best_match$predicted
+    sps_final_l[[i]]$hmdb_candidate_spectrum_id <- hmdb_best_match$spectrum_id
+    
+  }
+
+  #'' export all the scoring
+  # sps_final_l[[i]]$scoring_mtx_hmdb_Id <- names(res_l[[i]][idx[1],])
+  # sps_final_l[[i]]$scoring_mtx_score <- as.numeric(res_l[[i]][idx[1],])
+  
+  #' testing the outcome
+  max_score_l[[i]] <- max(res_l[[i]])
+  print(max(res_l[[i]]))
+  print(i)
+  
+  
+  library(MsBackendMgf)
+
+  #' Export the spectra to a MGF file
+  if(max(res_l[[i]]) > threshold) {
+    print("yes")
+    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"hmdb_matched_wt_score_",round(max(res_l[[i]]),4),"more_",sps_select[idx[1]]$precursorMz, "_hmdbID_",hmdb_with_mz[idx[2]]$spectrum_id,".mgf"))
+  }
+}
+
+```
 
