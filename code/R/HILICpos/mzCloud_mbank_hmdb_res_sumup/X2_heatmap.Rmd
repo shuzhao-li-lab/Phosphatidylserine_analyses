@@ -1,0 +1,144 @@
+---
+title: "X2_heatmap"
+author: "Minghao Gong"
+date: "5/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r library}
+# library
+rm(list = ls())
+library(tidyr)
+library(dplyr)
+# detach(package:plyr)
+```
+
+
+```{r output directory}
+output_dir <- paste0("../../../../data/output/manual_compiled_MS2_mzCloud_mbank_hmdb_res/","heatmap")
+dir.create(output_dir)
+```
+
+```{r output pdf file name}
+output_pdf_file <- paste0(output_dir,"/","heatmap.pdf")
+```
+
+
+## load the table
+```{r load the table, echo=FALSE}
+df_annot <- read.csv("../../../../data/output/manual_compiled_MS2_mzCloud_mbank_hmdb_res/reorg_manual_this_time/summarized_HILICpos_manual_input_mzCloud_mbank_hmdb_matched_spectra_in_Rafi_Sign_list.csv")
+
+df_data <- read.csv("../../../../data/output/MS2_Spectra_massbank_match_05152021/HILICpos/Significant_list/sorted_filt_med_16.6_padj_0.05_FC_1_ttest_R5posvsR5neg.csv")
+
+```
+
+```{r look at the tables}
+head(df_annot)
+head(df_data)
+```
+
+```{r merge tables}
+m_df <- merge(df_annot, df_data, on = "X");m_df
+```
+```{r}
+colnames(m_df)
+```
+```{r annotation-row table}
+annot_row <- m_df %>% select(hmdb, massbank,mzCloud)
+row.names(annot_row) <- m_df$name
+colnames(annot_row) <- c("hmdb", "massbank","mzCloud")
+
+annot_row
+```
+
+```{r select data table}
+log2HT <- m_df[,28:33]
+row.names(log2HT) <- m_df$name;log2HT
+```
+```{r}
+# Add annotation as described above, and change the name of annotation
+annotation_col = data.frame(label =  sapply(colnames(log2HT),function(x)strsplit(x,"_")[[1]][2])) #set up your treatment (class), and needs to be factor 
+rownames(annotation_col) = colnames(log2HT)
+
+annotation_col
+
+```
+
+```{r annotation colors}
+#Specify column colors
+column_colors <- c("#0000ff","#ff0000")
+names(column_colors) <- unique(annotation_col$label)
+
+row_colors <- c("#880000","#ffffff")
+names(row_colors) <- c("yes","no")
+
+
+mycolors_l <- list(label = column_colors, 
+                   hmdb = row_colors,
+                   massbank = row_colors,
+                   mzCloud = row_colors)
+
+mycolors_l
+```
+
+
+```{r prepare heatmap}
+
+library(pheatmap)
+library(RColorBrewer)
+
+zscore <- function(x) {
+  z <- (x - rowMeans(x))/ apply(x,1,sd)
+  return(z)
+}
+
+```
+
+
+
+
+```{r perform heatmap}
+#numeric_input <- log2HT[,1:ncol(log2HT)]  #!
+z_transformed <-zscore(log2HT)  #log(numeric_input+1,2)
+z_transformed <- z_transformed[complete.cases(z_transformed), ]
+
+#annotation_row = data.frame(GeneClass = factor(HT$pathways)) # metabolism A...
+#rownames(annotation_row) = rownames(numeric_input) #e.g., Gene A, Gene B
+
+
+range(z_transformed) #check the range of z_transformed
+
+```
+
+
+```{r assign breakslist}
+breaksList = seq(-1.5, 1.5, 0.1) # change according to the previous output
+```
+
+
+```{r perform heatmap}
+cell_colors <- colorRampPalette(rev(brewer.pal(n = 9, name = "RdYlBu")))(length(breaksList)) #rev()
+
+
+# mat_breaks <- seq(min(z_transformed), max(z_transformed), length.out = 1)
+
+
+
+pdf(file=output_pdf_file, width =100,height=30, paper = "special",onefile=FALSE)
+par(mar = c(5,15,5,15))
+# Either z_transformed or HT #
+pheatmap(z_transformed, cluster_rows = TRUE, show_rownames = TRUE, cluster_cols = TRUE, 
+         annotation_col = annotation_col, annotation_row = annot_row, annotation_colors = mycolors_l, clustering_method = "complete", breaks = breaksList, 
+         color = cell_colors, cellwidth = 10, cellheight = 10) 
+#HT or z_transformed; col, cluster_rows,cluster_cols; 
+
+#Reset_it
+dev.off()
+```
+
