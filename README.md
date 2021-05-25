@@ -43,3 +43,7 @@ The data repository: https://www.synapse.org/#!Synapse:syn12613596/wiki/581963
   - [ ] X1: figure out a way to put together hmdb/mbank table (generated in the previous step) & the mzCloud table, facilitating the X2: heatmap generations.
   - [ ] X4: XIC plot after chromPeak plotting to make sure the mz traces look good.
 
+## systematic-trinity-hmdb-mbank-CD
+- This branch focuses on how to make possible the trinity of hmdb, mbank and Compound Discover annotations all together in programmatic way.
+  - Previous branch has tried out the half-manual/half-programmatic way
+- Basically, it aims to address the leftover issues from the branch `annotation-with-CD-exported-tables` or `Prepare4Shuzhao-li_Seminar_052321`
