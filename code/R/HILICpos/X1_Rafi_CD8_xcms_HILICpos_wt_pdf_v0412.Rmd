@@ -91,6 +91,15 @@ raw_data <- readMSData(files = paste0(path, "/", pd$sample_name),
                        mode = "onDisk")
 ```
 
+# Save the raw data
+```{r}
+# Save an object to a file
+saveRDS(raw_data, file = paste(output_dir,"raw_data.rds",sep = ""))
+# Restore the object
+#readRDS(file = "my_data.rds")
+```
+
+
 # Check FileName and see if they match with the raw_data$sample_name
 ```{r Check FileName after loading to MSNexp}
 basename(fileNames(raw_data)) == raw_data$sample_name
