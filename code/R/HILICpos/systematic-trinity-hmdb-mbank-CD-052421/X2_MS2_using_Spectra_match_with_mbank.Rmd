@@ -1,0 +1,207 @@
+---
+title: "MS2_using_Spectra_match_with_mbank_X2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list=ls())
+```
+
+```{r create output folder for hmdb}
+output_dir1 = "../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/massbank_search_agst_Sign_list/"
+dir.create(output_dir1)
+output_dir2 = "../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/massbank_search_agst_Sign_list/matches_0.4/"
+dir.create(output_dir2)
+output_dir = output_dir2
+
+```
+
+```{r load the data}
+sps_select_l  <- readRDS("../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/MS2spectra_select4library_match/sps_select_top3precursorIntensity_per_targeted_mz.Rds")
+```
+
+```{r normalize}
+#' Define a function to *normalize* the intensities
+norm_int <- function(x, ...) {
+    maxint <- max(x[, "intensity"], na.rm = TRUE)
+    x[, "intensity"] <- 100 * x[, "intensity"] / maxint
+    x
+}
+
+```
+
+## Comparing spectra against MassBank
+```{r massbank-library}
+library(RMariaDB)
+library(MsBackendMassbank)
+
+#' Connect to the MassBank MySQL database
+con <- dbConnect(MariaDB(), user = "massbank", dbname = "MassBank",
+                 host = "localhost", pass = "massbank")
+```
+
+```{r massbank}
+#' Access the spectra data in MassBank
+mbank <- Spectra(con, source = MsBackendMassbankSql())
+mbank
+```
+
+```{r massbank-size}
+print(object.size(mbank), units = "MB")
+```
+
+```{r massbank-compare subset}
+
+#' Document the start time
+start_time <- Sys.time()
+
+#' Identify spectra that contain a peak matching the precursorMz m/z of interest
+res_l = list()
+idx_l <- list()
+sps_final_l <- list()
+mbank_best_match_l <- list()
+max_score_l <- list()
+threshold <- 0.4
+for (i in (1:length(sps_select_l))) { # (1:length(sps_select_l)
+  has_mz <- containsMz(mbank, mz = mean(sps_select_l[[i]]$precursorMz), ppm = 10)
+  mbank_with_mz <- mbank[has_mz]
+  res_l[[i]] <- Spectra::compareSpectra(sps_select_l[[i]], mbank_with_mz, ppm = 5)
+  
+  if (is.null(nrow(res_l[[i]]))) {
+    res_l[[i]] <- t(as.matrix(res_l[[i]]))
+    colnames(res_l[[i]]) <- mbank_with_mz$spectrum_id
+
+  }
+
+  #' find the best one if it pass threshold, else drop the loop
+  if(max(res_l[[i]]) > threshold) {
+    idx_l[[i]] <- which(res_l[[i]] == max(res_l[[i]]), arr.ind = TRUE)
+    print(idx_l[[i]])
+    print(max(res_l[[i]]))
+    #intensity(mbank_with_mz[idx[2]])
+
+    #' *Normalize* the MassBank data
+    mbank_with_mz <- addProcessing(mbank_with_mz, norm_int)
+
+    #' Specifying a function to draw peak labels
+    label_fun <- function(x) {
+        ints <- unlist(intensity(x))
+        mzs <- format(unlist(mz(x)), digits = 6)
+        mzs[ints < 5] <- ""
+        mzs
+    }
+
+    idx <- idx_l[[i]]
+    sps_select <- sps_select_l[[i]]
+
+    #' get the mbank spectra object.
+  if(max(res_l[[i]]) > threshold) {
+    mbank_best_match <- mbank_with_mz[idx[2]]
+    mbank_best_match_l[[i]] <- mbank_best_match
+    print("yes")
+    }
+    
+    #' plot and export the best matching if passing dot-plot score > threshold.
+    pdf(paste0(output_dir,"mirror_plot_","JAX_1stDryAnal","_spsSelectMz_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".pdf"))
+    plotSpectraMirror(sps_select[idx[1]], mbank_with_mz[idx[2]], tolerance = 0.2,
+                    labels = label_fun, labelPos = 2, labelOffset = 0.2,
+                    labelSrt = -30, main = paste("mbank",mbank_best_match$compound_name,
+                                                 mbank_best_match$exactmass,
+                                                 mbank_best_match$adduct,
+                                                 round(mbank_best_match$precursorMz,4),"realdata",
+                                                 round(sps_select[idx[1]]$precursorMz,4),sep = "|"))
+    grid()
+    dev.off()
+  }
+
+  
+  
+  #' export the scoring matrix & the annotations from massbank
+  #'' get mark of massbank
+  if(max(res_l[[i]]) > threshold) {
+    sps_final_l[[i]] <- sps_select[idx[1]]
+  sps_final_l[[i]]$db_source <- "massbank"
+  }
+  
+  #'' export those that have best matched.
+  if(max(res_l[[i]]) > threshold) {
+    sps_final_l[[i]]$db_score <- max(res_l[[i]])
+    sps_final_l[[i]]$db_compound_id <- mbank_best_match$compound_id
+    sps_final_l[[i]]$db_spectrum_id <- mbank_best_match$spectrum_id
+    sps_final_l[[i]]$db_name <- mbank_best_match$compound_name
+    sps_final_l[[i]]$db_formula <- mbank_best_match$formula
+    sps_final_l[[i]]$db_exactmass <- mbank_best_match$exactmass
+    sps_final_l[[i]]$db_adduct <- mbank_best_match$adduct
+    sps_final_l[[i]]$db_precursorMz <- mbank_best_match$precursorMz
+    sps_final_l[[i]]$db_instrument_type <- mbank_best_match$instrument_type
+    # important
+    
+  }
+  
+  #'' export all the scoring
+  # sps_final_l[[i]]$scoring_mtx_mbank_Id <- names(res_l[[i]][idx[1],])
+  # sps_final_l[[i]]$scoring_mtx_score <- as.numeric(res_l[[i]][idx[1],])
+  
+   #' testing the outcome
+  max_score_l[[i]] <- max(res_l[[i]])
+  print(max(res_l[[i]]))
+  print(i)
+  
+  library(MsBackendMgf)
+
+  #' Export the spectra to a MGF file
+  if(max(res_l[[i]]) > threshold) {
+    print("yes")
+    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"mbank_matched_wt_score_", round(max(res_l[[i]]),4),"more_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".mgf"))
+    
+  }
+}
+
+#' Document the end time
+end_time <- Sys.time()
+end_time - start_time
+
+```
+
+# Appendix 0. Checksums with the sha256 algorithm
+```{r}
+saveRDS(sps_final_l,paste0(output_dir,"sps_final_l_mbank_matched.Rds"))
+
+saveRDS(mbank_best_match_l,paste0(output_dir,"mbank_best_match_list.Rds"))
+
+```
+
+# Appendix 1. Checksums with the sha256 algorithm
+
+```{r}
+notebookid <- "Spectra_match_MS2_with_massbank"
+```
+
+# Appendix 2. Libraries metadata
+```{r}
+sess_output_dir <- "../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/session_info_massbank/"
+dir.create(sess_output_dir)
+
+dev_session_info   <- devtools::session_info()
+utils_session_info <- utils::sessionInfo()
+
+message("Saving `devtools::session_info()` objects in data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/session_info_hmdb_massbank/devtools_session_info.rds  ..")
+saveRDS(dev_session_info, file = paste0(sess_output_dir, notebookid, "_devtools_session_info.rds"))
+message("Done!\n")
+
+message("Saving `utils::sessionInfo()` objects in data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/session_info_hmdb_massbank/utils_session_info.rds  ..")
+saveRDS(utils_session_info, file = paste0(sess_output_dir, notebookid ,"_utils_info.rds"))
+message("Done!\n")
+
+dev_session_info$platform
+dev_session_info$packages[dev_session_info$packages$attached==TRUE, ]
+```
+
+
+
+
+```{r massbank-spectra-variables}
+#' What variables are available in MassBank
+spectraVariables(mbank_with_mz)
+```

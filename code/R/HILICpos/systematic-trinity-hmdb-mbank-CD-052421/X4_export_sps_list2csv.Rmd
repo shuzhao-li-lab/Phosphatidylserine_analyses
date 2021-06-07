@@ -1,0 +1,72 @@
+---
+title: "from_sps_final_l2csv"
+output: html_document
+note: this Rmd file read both spectra objects resulted from matching/identification with mbank & hmdb (sps_final_mbank_l & sps_final_hmdb_l); and results in hmdb_mbank_df.csv
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r library}
+library(Spectra)
+```
+
+
+```{r}
+output_dir <- "../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/test_sps_operation/"
+dir.create(output_dir)
+```
+
+```{r}
+sps_final_mbank_l <- readRDS("../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/massbank_search_agst_Sign_list/matches_0.4/sps_final_l_mbank_matched.Rds", refhook = NULL)
+
+sps_final_hmdb_l <- readRDS("../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/hmdb_search_agst_Sign_list/matches_0.4/sps_final_l_hmdb_matched.Rds", refhook = NULL)
+```
+
+```{r define function to convert sps_list to dataframe}
+#' This is the first version which doesn't involved concatenateSpectra
+spsList2df <- function(sps_list) {
+  sps_list_noNull <- sps_list[!sapply(sps_list,is.null)]
+  sps_list_noNull_df <- sapply(sps_list_noNull,function(x)spectraData(x))
+  sps_final_df <- do.call("rbind",sps_list_noNull_df)
+  return(sps_final_df)
+}
+```
+
+```{r}
+# https://github.com/jorainer/SpectraTutorials/issues/10
+
+# spsList2df_v2 <- function(sps_list) 
+#   {
+#   sps_list_noNull <- sps_list[!sapply(sps_list,is.null)]
+#   sps_final_l_noNull <- lapply( sps_list_noNull, function(z) {
+#     z <- setBackend(z, MsBackendDataFrame())
+#     applyProcessing(z)
+#     })
+#   sps_final <- concatenateSpectra(unname(sps_list_noNull))
+#   sps_final_df <- spectraData(sps_final)
+#   return(sps_final_df)
+#   
+# }
+
+#' Comment
+#' Error in mzR::openMSfile(x) : File /home/rstudio/external/data/input/04282021_Rafi_HILIC_pos_AX_DeepScan/mzML/ddMS# 2_scan/ID_01.mzML not found
+#' This method require the data source to be exactly the same. So I decide to drop this method as I may encounter problem to look back at those data.
+
+```
+
+
+```{r}
+mbank_df <- spsList2df(sps_final_mbank_l)
+hmdb_df <- spsList2df(sps_final_hmdb_l)
+```
+
+```{r}
+library(plyr)
+merge_df <- rbind.fill(data.frame(hmdb_df),data.frame(mbank_df))
+write.csv(merge_df,paste0(output_dir,"hmdb_mbank_df.csv"))
+```
+
+

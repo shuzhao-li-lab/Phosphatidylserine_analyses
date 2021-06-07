@@ -1,0 +1,126 @@
+---
+title: "fill_in_hmdb_info"
+author: "Minghao Gong"
+date: "6/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+df <- read.csv("../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/test_sps_operation/hmdb_mbank_df.csv")
+colnames(df)
+```
+
+```{r}
+output_dir <- "../../../../data/output/systematic-trinity-hmdb-mbank-CD-052421/HILICpos/test_sps_operation/"
+
+```
+
+
+```{r function to retrieve HMDB XML}
+#' This part retrieve metabolite information from hmdb based on HMDB0000001
+#' copy from `fill_in_hmdb_info_function_test.R`
+#' originated from R package hmdbQuery hided funciton
+
+.hmxPath = function(prefix="http://www.hmdb.ca/metabolites/",
+                    id="HMDB0000001", ...) {
+  sub("__PRE__", prefix, sub("%%ID%%", id, "__PRE__%%ID%%.xml") )
+}
+
+hmxToList = function (prefix = "http://www.hmdb.ca/metabolites/", id = "HMDB0000001", 
+                      ...) 
+{
+  requireNamespace("XML")
+  stopifnot(is.atomic(prefix), length(prefix)==1, is.atomic(id), length(id)==1)
+  txt = readLines(.hmxPath(prefix=prefix, id=id, ...))
+  prs = xmlTreeParse(txt, asText=TRUE)
+  xmlToList(prs)
+}
+```
+
+
+```{r test}
+#' example run
+library("XML")
+test <- hmxToList(prefix="http://www.hmdb.ca/metabolites/",
+          id="HMDB0014328")
+test$chemical_formula
+test$monisotopic_molecular_weight
+test$name
+```
+
+```{r}
+library(XML)
+for (i in (1:nrow(df))) {
+  if (df$db_source[i] == "hmdb") {
+    
+    print("yes")
+    #' retrieve the hmdb entry by compound ID
+    hmdb_id <- df$db_compound_id[i]
+    hmdb_listOfEntry <- hmxToList(prefix="http://www.hmdb.ca/metabolites/",
+                                  id=hmdb_id)
+    
+    #' assign the useful info to the dataframe
+    df$db_name[i] <- hmdb_listOfEntry$name
+    df$db_formula[i] <- hmdb_listOfEntry$chemical_formula
+    df$db_exactmass[i] <- hmdb_listOfEntry$monisotopic_molecular_weight
+    
+    #' Calculate precursorMz 
+    ##' assuming that if it is M+H or M-H
+    if (df$polarity[i] == 1) {  # positive mode
+      df$db_adduct[i] <- "*[M+H]+"
+      df$db_precursorMz[i] <- as.numeric(df$db_exactmass[i]) + 1.007825035
+    } 
+    else if(df$polarity[i] == 0) {  # negative mode
+      df$db_adduct[i] <- "*[M-H]-"
+      df$db_precursorMz[i] <- as.numeric(df$db_exactmass[i]) - 1.007825035
+    }
+    
+  }
+}
+hmdb_list <- NULL
+hmdb_id <- NULL
+```
+
+```{r}
+df[c("precursorMz","db_precursorMz","db_name", "db_source")]
+
+```
+
+# write the output data
+```{r}
+write.csv(df,paste0(output_dir,"hmdb_mbank_df_filledEmptyHmdbInfo.csv"))
+```
+
+# Collapse dataframe
+```{r}
+colnames(df)
+```
+```{r}
+#' excluding "X" and all the columns with "db_" prefix
+columns_selected <- colnames(df)[2:35] 
+```
+
+
+```{r}
+# try to collapse dataframe
+# detach("plyr") # This is critical to avoid single-row summary which is used in plyr
+library(dplyr)
+agg_df <- df  %>% group_by(.dots = columns_selected) %>% summarize_each(funs(paste(., collapse = "; ")))  
+# pathway_collapsed = paste(annotation, collapse = ";")
+dim(agg_df)
+dim(agg_df)
+```
+```{r}
+head(agg_df)
+```
+
+# write the output data
+```{r}
+write.csv(agg_df,paste0(output_dir,"collapsed_hmdb_mbank_df_filledEmptyHmdbInfo.csv"))
+```
+
+
