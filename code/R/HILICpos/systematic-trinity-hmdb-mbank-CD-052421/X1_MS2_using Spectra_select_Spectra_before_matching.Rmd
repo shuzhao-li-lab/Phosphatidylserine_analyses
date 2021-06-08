@@ -140,6 +140,7 @@ FT_test_df
 
 
 ```{r}
+FT_condidate_l = FT_test_df$X # access the Feature ID.
 precursor_candidate_l = FT_test_df$mzmed
 rt_candidate_l = list()
 for (i in (1:nrow(FT_test_df))) {
@@ -158,6 +159,9 @@ for (j in 1:length(precursor_candidate_l)) {
   # print(j)
   rt_range <- rt_candidate_l[[j]]
   sps_ms2based_on_pre_candid_l[[j]] <- filterRt(sps_ms2based_on_pre_candid_l[[j]], rt = c(rt_range[1]-300,rt_range[2]+300)) #no retention selection so using 300
+  if(length(sps_ms2based_on_pre_candid_l[[j]]) != 0) {
+    sps_ms2based_on_pre_candid_l[[j]]$featureIdCandidate <- FT_condidate_l[[j]]
+  }
   
 }
 
@@ -175,6 +179,7 @@ sapply(sps_ms2based_on_pre_candid_l, function(x)length(x))
 sps_ms2based_on_pre_candid_l = sps_ms2based_on_pre_candid_l[sapply(sps_ms2based_on_pre_candid_l, function(x)length(x))!=0]
 length(sps_ms2based_on_pre_candid_l)
 sapply(sps_ms2based_on_pre_candid_l, function(x)length(x))
+sapply(sps_ms2based_on_pre_candid_l[1:5], function(x)x$featureIdCandidate)
 ```
 
 ```{r Export the spectra of interest to a MGF file}

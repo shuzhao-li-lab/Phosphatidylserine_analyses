@@ -103,14 +103,14 @@ for (i in (1:length(sps_select_l))) { # (1:length(sps_select_l)
     }
     
     #' plot and export the best matching if passing dot-plot score > threshold.
-    pdf(paste0(output_dir,"mirror_plot_","JAX_1stDryAnal","_spsSelectMz_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".pdf"))
+    pdf(paste0(output_dir,"mirror_plot_","","_spsSelectMz_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,"_featureId_",sps_select[idx[1]]$featureIdCandidate,".pdf"))
     plotSpectraMirror(sps_select[idx[1]], mbank_with_mz[idx[2]], tolerance = 0.2,
                     labels = label_fun, labelPos = 2, labelOffset = 0.2,
                     labelSrt = -30, main = paste("mbank",mbank_best_match$compound_name,
                                                  mbank_best_match$exactmass,
                                                  mbank_best_match$adduct,
                                                  round(mbank_best_match$precursorMz,4),"realdata",
-                                                 round(sps_select[idx[1]]$precursorMz,4),sep = "|"))
+                                                 round(sps_select[idx[1]]$precursorMz,4),sps_select[idx[1]]$featureIdCandidate,sep = "|"))
     grid()
     dev.off()
   }
@@ -153,7 +153,7 @@ for (i in (1:length(sps_select_l))) { # (1:length(sps_select_l)
   #' Export the spectra to a MGF file
   if(max(res_l[[i]]) > threshold) {
     print("yes")
-    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"mbank_matched_wt_score_", round(max(res_l[[i]]),4),"more_",sps_select[idx[1]]$precursorMz, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".mgf"))
+    export(sps_final_l[[i]], backend = MsBackendMgf(), file = paste0(output_dir,"mbank_matched_wt_score_", round(max(res_l[[i]]),4),"more_",sps_select[idx[1]]$precursorMz,"_FeatureId_",sps_select[idx[1]]$featureIdCandidate, "_mbankID_",mbank_with_mz[idx[2]]$spectrum_id,".mgf"))
     
   }
 }
