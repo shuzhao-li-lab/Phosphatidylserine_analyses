@@ -95,32 +95,26 @@ df[c("precursorMz","db_precursorMz","db_name", "db_source")]
 write.csv(df,paste0(output_dir,"hmdb_mbank_df_filledEmptyHmdbInfo.csv"))
 ```
 
-# Collapse dataframe
 ```{r}
-colnames(df)
-```
-```{r}
-#' excluding "X" and all the columns with "db_" prefix
-columns_selected <- colnames(df)[2:35] 
-```
-
-
-```{r}
-# try to collapse dataframe
-# detach("plyr") # This is critical to avoid single-row summary which is used in plyr
-library(dplyr)
-agg_df <- df  %>% group_by(.dots = columns_selected) %>% summarize_each(funs(paste(., collapse = "; ")))  
-# pathway_collapsed = paste(annotation, collapse = ";")
-dim(agg_df)
-dim(agg_df)
-```
-```{r}
-head(agg_df)
+validPrecursorMzCheck <- function(expPrecursorMz,dbPrecursorMz, Da_tolerance) {
+  if(is.na(dbPrecursorMz)) {
+    return("PrecursorMz not given")
+  }
+  else if(abs(expPrecursorMz - dbPrecursorMz) > Da_tolerance) {
+    return("Invalid mass") }
+    else {
+      return("Full match")
+    }
+}
 ```
 
-# write the output data
 ```{r}
-write.csv(agg_df,paste0(output_dir,"collapsed_hmdb_mbank_df_filledEmptyHmdbInfo.csv"))
+df$validPrecursorMassCheck <- mapply(validPrecursorMzCheck,df$precursorMz,df$db_precursorMz, 0.5)
+```
+
+# write the output data with validPrecursorMassCheck
+```{r}
+write.csv(df,paste0(output_dir,"hmdb_mbank_df_filledEmptyHmdbInfo_validPrecurMzCheck.csv"))
 ```
 
 
