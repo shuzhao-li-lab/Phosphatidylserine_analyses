@@ -40,10 +40,16 @@ The data repository: https://www.synapse.org/#!Synapse:syn12613596/wiki/581963
 - In need of enhancement:
   - [Done] How to perform Spectra matching together with generating a table documenting all the matched precursor information, annotations and so on
     - The specificies can refer to the manual reorganized table (`/Users/gongm/Documents/projects/Rafi_Ahmed_exhaustedCD8Tcell/data/input/manual_compiled_MS2_mzCloud_mbank_hmdb_res/tables/HILICpos_manual_input_mzCloud_mbank_hmdb_matched_spectra_in_Rafi_Sign_list.csv`)
-  - [Not yet] X1: figure out a way to put together hmdb/mbank table (generated in the previous step) & the mzCloud table, facilitating the X2: heatmap generations.
+  - [Done] X1: figure out a way to put together hmdb/mbank table (generated in the previous step) & the mzCloud table, facilitating the X2: heatmap generations.
   - [Done] X4: XIC plot after chromPeak plotting to make sure the mz traces look good. 1da8b8f4e8
 
 ## systematic-trinity-hmdb-mbank-CD
 - This branch focuses on how to make possible the trinity of hmdb, mbank and Compound Discover annotations all together in programmatic way.
   - Previous branch has tried out the half-manual/half-programmatic way
 - Basically, it aims to address the leftover issues from the branch `annotation-with-CD-exported-tables` or `Prepare4Shuzhao-li_Seminar_052321`
+
+- The workflow has been temporarily completed. 
+  - [ ]And it needs to be tested in JAX cluster.
+  - [ ] But it needs to be tested using some data with targeted panel to make sure the performance.
+    - Either using a new run
+    - construct a database for the internal standard.
