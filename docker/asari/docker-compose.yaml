@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  asari:
+    tty: true # docker run -t
+    stdin_open: true # docker run -i
+    image: shuzhao/asari:1.9.2
+    container_name: asari
+    volumes:
+      - ../../:/home/
+    cpus: 8.0 
+    mem_reservation: "4000M"
+    mem_limit: "8000M"
+      
+

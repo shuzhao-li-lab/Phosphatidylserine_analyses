@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  R-notebook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exp1-r-notebook
+    image: gongm/exp1-r-notebook
+    ports:
+      - '8888:8888'
+    volumes:
+      - ../../:/home/jovyan/
+      
+

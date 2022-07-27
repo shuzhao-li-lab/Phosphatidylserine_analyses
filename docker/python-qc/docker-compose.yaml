@@ -1,0 +1,14 @@
+version: '3.9'
+services:
+  openms-qc:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openms-qc
+    image: gmhhope/pyopenms-qc:latest
+    ports:
+      - '8880:8888'
+    volumes:
+      - ../../:/home/jovyan/
+      
+
