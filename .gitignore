@@ -10,6 +10,8 @@ R.Rproj
 # input
 input/**
 output/**
+presentation/**
+
 
 # exclude data from source control by default
 data/*
