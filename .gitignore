@@ -7,6 +7,10 @@ R.Rproj
 .RData
 *.html
 
+# input
+input/**
+output/**
+
 # exclude data from source control by default
 data/*
 
@@ -98,3 +102,8 @@ target/
 # Mypy cache
 .mypy_cache/
 .Rproj.user
+.ipython/**
+.jupyter/**
+kernel*
+.local/*
+

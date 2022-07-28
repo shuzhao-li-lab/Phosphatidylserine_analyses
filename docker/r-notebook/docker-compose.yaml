@@ -4,8 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: exp1-r-notebook
-    image: gongm/exp1-r-notebook
+    container_name: rafi-r-notebook
+    image: gongm/rafi-r-notebook
     ports:
       - '8888:8888'
     volumes:
