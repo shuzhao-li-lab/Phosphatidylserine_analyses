@@ -7,11 +7,13 @@ R.Rproj
 .RData
 *.html
 
+
 # specific folders (customized)
 input/**
 output/**
 presentation/**
 **/history/**
+**/data/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
