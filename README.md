@@ -2,10 +2,7 @@
 
 
 ## mode 
-- HILICpos
+- RPneg
 
-
-## normalization - TIC normalization
-- find out the cell number normalization cannot work out. See #8
-- Thus create `TICnorm` branch to work on TIC normalized data.
-- The previous `cellNorm` output will move to history
+## Lipidomics
+- Initiate in March 13rd, 2023
