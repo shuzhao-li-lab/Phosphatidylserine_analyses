@@ -6,7 +6,7 @@ import pandas as pd
 import sys
 
 # https://github.com/shuzhao-li/asari/blob/284d49db05bc95377072a865663550f59340aca3/asari/tools/plot.py
-def get_potental_precursor_from_file(infile, 
+def get_potential_precursor_from_file(infile, 
                                      min_scan_number, 
                                      max_scan_number, 
                                      min_mz, 
@@ -38,7 +38,7 @@ def get_potental_precursor_from_file(infile,
 
 
 
-def get_potental_precursor_from_exp(exp, 
+def get_potential_precursor_from_exp_filtbyRt(exp, 
                                      min_scan_number, 
                                      max_scan_number, 
                                      min_mz, 
@@ -69,6 +69,38 @@ def get_potental_precursor_from_exp(exp,
     return matched_specs
 
 
+
+
+def get_potental_precursor_from_exp_filtbyRt(exp, 
+                                     min_rt_sec, 
+                                     max_rt_sec, 
+                                     min_mz, 
+                                     max_mz,
+                                     charge_state = 1,
+                                     ms_level= 2):
+    '''
+    input
+    -----
+    infile: exp as input
+    return 
+    ------
+    list, [(scan_number, mz, intensity value), ...]
+    Note
+    ----
+    The precursor charge no matter mode is always positive integer
+    '''
+    ii = 0   # scan_number starts with 0
+    matched_specs = []
+    for spec in exp:
+        rt_sec = round(spec.scan_time[0]*60,3)
+        if min_rt_sec < rt_sec < max_rt_sec: # select the retention time region to reduce spectra of interest
+            if spec.ms_level == ms_level: # select ms2 level
+                precursor_dict = spec.selected_precursors[0] # maybe because it can be multiplexed so the precursor is a list
+                if min_mz < precursor_dict['mz'] < max_mz:
+                    matched_specs.append(spec)
+                
+        ii += 1
+    return matched_specs
 
 
 
