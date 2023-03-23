@@ -38,7 +38,7 @@ def get_potential_precursor_from_file(infile,
 
 
 
-def get_potential_precursor_from_exp_filtbyRt(exp, 
+def get_potential_precursor_from_exp_filtbyScan(exp, 
                                      min_scan_number, 
                                      max_scan_number, 
                                      min_mz, 
@@ -71,7 +71,7 @@ def get_potential_precursor_from_exp_filtbyRt(exp,
 
 
 
-def get_potental_precursor_from_exp_filtbyRt(exp, 
+def get_potential_precursor_from_exp_filtbyRt(exp, 
                                      min_rt_sec, 
                                      max_rt_sec, 
                                      min_mz, 
@@ -153,3 +153,32 @@ def plot_spectra(spectra,
 
         # Show the plot (optional)
         plt.show()
+        
+        
+        
+def cal_ppm(mz1,
+            mz2):
+    return abs((mz1-mz2))*1000000/mz2
+
+# this function only works for situation where you look at charge state = 1
+def search_NL(spectra,
+              NL_mz = 87.03124,
+              ppm_prec = 100,
+              ppm = 40):
+    res_data = []
+
+    for spec in spectra:
+        if cal_ppm(spec.selected_precursors[0]['mz'],max(spec.mz)) > ppm_prec:
+            sel_prec_mz = spec.selected_precursors[0]['mz'] # this m/z will not be exactly the precursor m/z    
+        else:
+            sel_prec_mz = max(spec.mz)
+        
+        sel_mz = [mz for mz in spec.mz if abs(mz - sel_prec_mz) < np.ceil(NL_mz)]
+    
+        for mz in sel_mz:
+            calc_ppm = cal_ppm((sel_prec_mz - mz),NL_mz)
+            if calc_ppm < ppm:
+                print(calc_ppm)
+                res_data.append(spec)
+                break
+    return res_data
