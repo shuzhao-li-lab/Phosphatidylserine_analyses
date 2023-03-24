@@ -15,6 +15,7 @@ presentation/**
 **/history/**
 **/data/*
 **/archive/**
+**/reference/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

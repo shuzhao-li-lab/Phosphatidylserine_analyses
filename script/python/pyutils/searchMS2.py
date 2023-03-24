@@ -117,7 +117,7 @@ def plot_spectra(spectra,
         
         intensity_values = intensity_values/max(intensity_values)
         
-        zipped_mz_int = [(x,y) for x,y in zip(mz_values,intensity_values) if y > 0.1]
+        zipped_mz_int = [(x,y) for x,y in zip(mz_values,intensity_values) if y > 0.05]
         mz_values, intensity_values = zip(*zipped_mz_int)
         
         precursor_mz = round(spectrum.selected_precursors[0]['mz'], 4)
@@ -173,7 +173,7 @@ def search_NL(spectra,
         else:
             sel_prec_mz = max(spec.mz)
         
-        sel_mz = [mz for mz in spec.mz if abs(mz - sel_prec_mz) < np.ceil(NL_mz)]
+        sel_mz = [mz for mz in spec.mz if abs(mz - sel_prec_mz) < (np.ceil(NL_mz)+1)] # +1 is to increase a little bit the range
     
         for mz in sel_mz:
             calc_ppm = cal_ppm((sel_prec_mz - mz),NL_mz)
