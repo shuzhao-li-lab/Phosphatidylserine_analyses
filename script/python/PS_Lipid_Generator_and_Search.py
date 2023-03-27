@@ -272,24 +272,22 @@ if __name__ == '__main__':
     }
 
     features, mz_interval_tree = process_feature_table(sys.argv[1])
+    min_mz = min([float(f['mz']) for f in features.values()])
+    max_mz = max([float(f['mz']) for f in features.values()])
     all_targets = []
-    all_targets.extend(generate_PS(PS_headgroup))
-    all_targets.extend(generate_LPS(PS_headgroup))
-    all_targets.extend(generate_PSO(PS_headgroup))
-    all_targets.extend(generate_LPSO(PS_headgroup))
-    all_targets.extend(generate_LPSO_O(PS_headgroup))
+    all_targets.extend(generate_PS(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
+    all_targets.extend(generate_LPS(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
+    all_targets.extend(generate_PSO(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
+    all_targets.extend(generate_LPSO(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
+    all_targets.extend(generate_LPSO_O(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
     all_targets = combine_isomers(all_targets)
     all_targets = generate_adducts(all_targets, "[M-H+e]", {"H": -1, "e": 1})
 
     search_features(mz_interval_tree, all_targets)
-
-    #for x in all_targets:
-    #    print(x)
-    #all_targets = [x for x in all_targets if x["name"] == "PS 40:6"]
-    with open("./theoretical_PS_search_results_MG_3_27_2023_v2.json", 'w') as out_fh:
+    with open("./theoretical_PS_search_results_MG_3_27_2023_v3.json", 'w') as out_fh:
         json.dump([prep_for_serialization(x) for x in all_targets], out_fh, indent=4)
     ground_truth = read_target_list(sys.argv[2])
     check_target_correctness(all_targets, ground_truth)
 
-    with open("./features_to_PS_annotations_MG_3_27_2023_v2.json", "w") as out_fh:
+    with open("./features_to_PS_annotations_MG_3_27_2023_v3.json", "w") as out_fh:
         json.dump(create_annotated_feature_table(all_targets, features), out_fh, indent=4)
