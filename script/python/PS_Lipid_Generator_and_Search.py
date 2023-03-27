@@ -7,17 +7,21 @@ import json
 from collections import defaultdict
 
 def check_target_correctness(targets, ground_truth_examples):
+    all_target_names = set()
     shorthand_to_formula = {}
     for ground_truth_example in ground_truth_examples:
-        shorthand_to_formula[ground_truth_example['Species Shorthand']] = ground_truth_example['Formula']
+        shorthand_to_formula[ground_truth_example['Species Shorthand']] = ground_truth_example['Formula'] 
     for target in targets:
         possible_names = [target["name"]] + target["isomers"]
         for name in possible_names:
+            all_target_names.add(name)
             if name in shorthand_to_formula:
                 if shorthand_to_formula[name] != target["formula"]:
-                    print(name, target['formula'], shorthand_to_formula['formula'])
-                    raise Exception()
-
+                    raise Exception(target['name'] + " did not match ground truth")
+    for ground_truth_example in ground_truth_examples:
+        if ground_truth_example['Species Shorthand'] not in all_target_names:
+            raise Exception(ground_truth_example['Species Shorthand'] + " not in generated lipids")
+        
 
 def process_feature_table(feature_table_csv_filepath, mass_tolerance_ppm=5):
     mz_interval_tree = intervaltree.IntervalTree()
@@ -88,10 +92,15 @@ def generate_formula(element_dict):
 # LPS 28:0 665.46316977062 C34H68NO9P
 
 def generate_LPSO(headgroup, max_mz=1000, min_mz=0):
-    LPSO_modification = {"O": -1, "H": 4}
+    LPSO_modification = {"O": -2, "H": 4}
     LPSO_headgroup = add_formula_dicts(PS_headgroup, LPSO_modification)
+    return generate_PS(LPSO_headgroup, name="LPS O-")
+
+def generate_LPSO_O(headgroup, max_mz=1000, min_mz=0):
+    LPSO_O_modification = {"O": -1, "H": 4}
+    LPSO_O_headgroup = add_formula_dicts(PS_headgroup, LPSO_O_modification)
     new_lipids = []
-    for lipid in generate_PS(LPSO_headgroup, name="LPS O-"):
+    for lipid in generate_PS(LPSO_O_headgroup, name="LPS O-"):
         lipid["name"] += ";O"
         new_lipids.append(lipid)
     return new_lipids
@@ -200,8 +209,6 @@ def search_features(mz_interval_tree, targets):
                             count += 1
                     if count / len(samples_to_include) > .9:
                         intensity_rt_filtered_possible_iso_matches.append(iso)
-                    else:
-                        print("Failure")
                 preferred_isotopologue = None
                 lowest_mass_error = np.inf
                 for plausable_iso_match in intensity_rt_filtered_possible_iso_matches:
@@ -218,9 +225,9 @@ def search_features(mz_interval_tree, targets):
                     if C13_count not in target["hits_isotopologue_chain"][mz_only_match["id_number"]]:
                         target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count] = []
                     target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count].append(preferred_isotopologue['id_number'])
+        #print(prep_for_serialization(target))
 
-
-                '''
+        '''
                 
                 for potential_isotopologue in [x.data for x in mz_interval_tree.at(isotoplogue_mass)]:
 
@@ -270,6 +277,7 @@ if __name__ == '__main__':
     all_targets.extend(generate_LPS(PS_headgroup))
     all_targets.extend(generate_PSO(PS_headgroup))
     all_targets.extend(generate_LPSO(PS_headgroup))
+    all_targets.extend(generate_LPSO_O(PS_headgroup))
     all_targets = combine_isomers(all_targets)
     all_targets = generate_adducts(all_targets, "[M-H+e]", {"H": -1, "e": 1})
 
@@ -278,10 +286,10 @@ if __name__ == '__main__':
     #for x in all_targets:
     #    print(x)
     #all_targets = [x for x in all_targets if x["name"] == "PS 40:6"]
-    with open("./theoretical_PS_search_results_MG_3_27_2023.json", 'w') as out_fh:
+    with open("./theoretical_PS_search_results_MG_3_27_2023_v2.json", 'w') as out_fh:
         json.dump([prep_for_serialization(x) for x in all_targets], out_fh, indent=4)
     ground_truth = read_target_list(sys.argv[2])
     check_target_correctness(all_targets, ground_truth)
 
-    with open("./features_to_PS_annotations_MG_3_27_2023.json", "w") as out_fh:
+    with open("./features_to_PS_annotations_MG_3_27_2023_v2.json", "w") as out_fh:
         json.dump(create_annotated_feature_table(all_targets, features), out_fh, indent=4)
