@@ -6,7 +6,7 @@ references/*
 R.Rproj
 .RData
 *.html
-**/*.json
+script/python/json/**
 
 # specific folders (customized)
 input/**
