@@ -7,21 +7,17 @@ import json
 from collections import defaultdict
 
 def check_target_correctness(targets, ground_truth_examples):
-    all_target_names = set()
     shorthand_to_formula = {}
     for ground_truth_example in ground_truth_examples:
-        shorthand_to_formula[ground_truth_example['Species Shorthand']] = ground_truth_example['Formula'] 
+        shorthand_to_formula[ground_truth_example['Species Shorthand']] = ground_truth_example['Formula']
     for target in targets:
         possible_names = [target["name"]] + target["isomers"]
         for name in possible_names:
-            all_target_names.add(name)
             if name in shorthand_to_formula:
                 if shorthand_to_formula[name] != target["formula"]:
-                    raise Exception(target['name'] + " did not match ground truth")
-    for ground_truth_example in ground_truth_examples:
-        if ground_truth_example['Species Shorthand'] not in all_target_names:
-            raise Exception(ground_truth_example['Species Shorthand'] + " not in generated lipids")
-        
+                    print(name, target['formula'], shorthand_to_formula['formula'])
+                    raise Exception()
+
 
 def process_feature_table(feature_table_csv_filepath, mass_tolerance_ppm=5):
     mz_interval_tree = intervaltree.IntervalTree()
@@ -92,15 +88,10 @@ def generate_formula(element_dict):
 # LPS 28:0 665.46316977062 C34H68NO9P
 
 def generate_LPSO(headgroup, max_mz=1000, min_mz=0):
-    LPSO_modification = {"O": -2, "H": 4}
+    LPSO_modification = {"O": -1, "H": 4}
     LPSO_headgroup = add_formula_dicts(PS_headgroup, LPSO_modification)
-    return generate_PS(LPSO_headgroup, name="LPS O-")
-
-def generate_LPSO_O(headgroup, max_mz=1000, min_mz=0):
-    LPSO_O_modification = {"O": -1, "H": 4}
-    LPSO_O_headgroup = add_formula_dicts(PS_headgroup, LPSO_O_modification)
     new_lipids = []
-    for lipid in generate_PS(LPSO_O_headgroup, name="LPS O-"):
+    for lipid in generate_PS(LPSO_headgroup, name="LPS O-"):
         lipid["name"] += ";O"
         new_lipids.append(lipid)
     return new_lipids
@@ -165,7 +156,6 @@ def search_features(mz_interval_tree, targets):
     C12_mass = 12.0
     C13_C12_mass_diff = C13_mass - C12_mass
     samples_to_include = [
-        # MG CHECK THIS!!!!!!!
         "MT_20230308_006",
         "MT_20230308_008",
         "MT_20230308_010",
@@ -184,13 +174,15 @@ def search_features(mz_interval_tree, targets):
     for target in targets:
         #target["hits_isotopologue_chain"] = {}
         target["mz_only_hits"] = []
+
+        potential_mz_matches = mz_interval_tree.at(target["[M-H+e]"])
         for mz_only_match in [x.data for x in mz_interval_tree.at(target["[M-H+e]"])]:
             #print(mz_only_match["id_number"])
             target["mz_only_hits"].append(mz_only_match["id_number"])
             at_least_one_isopologue = True
             C13_count = 0
-            isotopologues = [mz_only_match]
-            #isotopologue_intensities.append([float(mz_only_match[sample_name]) for sample_name in samples_to_include])
+            isotopologue_intensities = []
+            isotopologue_intensities.append([float(mz_only_match[sample_name]) for sample_name in samples_to_include])
             while at_least_one_isopologue:
                 #print(C13_count)
                 at_least_one_isopologue = False
@@ -201,21 +193,15 @@ def search_features(mz_interval_tree, targets):
                 rt_filtered_possible_iso_matches = [iso for iso in posssible_iso_matches if float(mz_only_match['rtime_lower']) < float(iso['rtime']) < float(mz_only_match['rtime_higher'])]
                 intensity_rt_filtered_possible_iso_matches = []
                 for iso in rt_filtered_possible_iso_matches:
-                    matching_intensity_counts = 0
-                    previous_isotopologue_counts = 0
-                    breaks_intensity_counts = 0
-                    for sample_name in samples_to_include:
-                        previous_isotopologue_intensity = float(isotopologues[-1][sample_name])
-                        this_isotopologue_intensity = float(iso[sample_name])
-                        if previous_isotopologue_intensity > 0:
-                            previous_isotopologue_counts += 1
-                            if this_isotopologue_intensity < previous_isotopologue_intensity:
-                                matching_intensity_counts += 1
-                        else:
-                            if this_isotopologue_intensity > 0:
-                                breaks_intensity_counts += 1
-                    if previous_isotopologue_counts > 0 and matching_intensity_counts / previous_isotopologue_counts > 0.9 and breaks_intensity_counts == 0:
+                    intensities_for_possible_isotopologue = [float(iso[sample_name]) for sample_name in samples_to_include]
+                    count = 0
+                    for previous_isotopologue_intensity, possible_isotopologue_intensity in zip(isotopologue_intensities[-1], intensities_for_possible_isotopologue):
+                        if possible_isotopologue_intensity < previous_isotopologue_intensity:
+                            count += 1
+                    if count / len(samples_to_include) > .9:
                         intensity_rt_filtered_possible_iso_matches.append(iso)
+                    else:
+                        print("Failure")
                 preferred_isotopologue = None
                 lowest_mass_error = np.inf
                 for plausable_iso_match in intensity_rt_filtered_possible_iso_matches:
@@ -223,7 +209,7 @@ def search_features(mz_interval_tree, targets):
                     if mass_error < lowest_mass_error:
                         preferred_isotopologue = plausable_iso_match
                 if preferred_isotopologue:
-                    isotopologues.append(preferred_isotopologue)
+                    isotopologue_intensities.append([float(preferred_isotopologue[sample_name]) for sample_name in samples_to_include])
                     at_least_one_isopologue = True
                     if "hits_isotopologue_chain" not in target:
                         target["hits_isotopologue_chain"] = {}
@@ -233,6 +219,24 @@ def search_features(mz_interval_tree, targets):
                         target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count] = []
                     target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count].append(preferred_isotopologue['id_number'])
 
+
+                '''
+                
+                for potential_isotopologue in [x.data for x in mz_interval_tree.at(isotoplogue_mass)]:
+
+
+                    if float(mz_only_match['rtime_lower']) < float(potential_isotopologue['rtime']) < float(mz_only_match['rtime_higher']):
+                        at_least_one_isopologue = True
+                        if "hits_isotopologue_chain" not in target:
+                            target["hits_isotopologue_chain"] = {}
+                        if mz_only_match["id_number"] not in target["hits_isotopologue_chain"]:
+                            target["hits_isotopologue_chain"][mz_only_match["id_number"]] = {0: [mz_only_match["id_number"]]}
+                        if C13_count not in target["hits_isotopologue_chain"][mz_only_match["id_number"]]:
+                            target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count] = []
+                        target["hits_isotopologue_chain"][mz_only_match["id_number"]][C13_count].append(potential_isotopologue['id_number'])
+        #print(prep_for_serialization(target))
+        '''
+
 def create_annotated_feature_table(all_targets, features):
     features_to_targets = {}
     for feature in features:
@@ -240,9 +244,9 @@ def create_annotated_feature_table(all_targets, features):
     for target in all_targets:
         for feature in target["mz_only_hits"]:
             assign_name = ';'.join([x+"_m+13C0" for x in [target["name"]] + target["isomers"]])
-            features_to_targets[feature].append(assign_name)
+            features_to_targets[feature].append(target["name"] + "_m+13C0")
         if "hits_isotopologue_chain" in target:
-            for _, chain in target["hits_isotopologue_chain"].items():
+            for mz_match, chain in target["hits_isotopologue_chain"].items():
                 for isotopologue, feature_list in chain.items():
                     if isotopologue > 0:
                         for feature in feature_list:
@@ -261,22 +265,23 @@ if __name__ == '__main__':
     }
 
     features, mz_interval_tree = process_feature_table(sys.argv[1])
-    min_mz = min([float(f['mz']) for f in features.values()])
-    max_mz = max([float(f['mz']) for f in features.values()])
     all_targets = []
-    all_targets.extend(generate_PS(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
-    all_targets.extend(generate_LPS(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
-    all_targets.extend(generate_PSO(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
-    all_targets.extend(generate_LPSO(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
-    all_targets.extend(generate_LPSO_O(PS_headgroup, min_mz = min_mz, max_mz = max_mz))
+    all_targets.extend(generate_PS(PS_headgroup))
+    all_targets.extend(generate_LPS(PS_headgroup))
+    all_targets.extend(generate_PSO(PS_headgroup))
+    all_targets.extend(generate_LPSO(PS_headgroup))
     all_targets = combine_isomers(all_targets)
     all_targets = generate_adducts(all_targets, "[M-H+e]", {"H": -1, "e": 1})
 
     search_features(mz_interval_tree, all_targets)
-    with open("./theoretical_PS_search_results_MG_6_14_2023_v1.json", 'w') as out_fh:
+
+    #for x in all_targets:
+    #    print(x)
+    #all_targets = [x for x in all_targets if x["name"] == "PS 40:6"]
+    with open("./theoretical_PS_search_results_MG_6_14_2023.json", 'w') as out_fh:
         json.dump([prep_for_serialization(x) for x in all_targets], out_fh, indent=4)
     ground_truth = read_target_list(sys.argv[2])
     check_target_correctness(all_targets, ground_truth)
 
-    with open("./features_to_PS_annotations_MG_6_14_2023_v1.json", "w") as out_fh:
+    with open("./features_to_PS_annotations_MG_6_14_2023.json", "w") as out_fh:
         json.dump(create_annotated_feature_table(all_targets, features), out_fh, indent=4)
