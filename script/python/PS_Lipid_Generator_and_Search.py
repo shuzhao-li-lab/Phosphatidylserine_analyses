@@ -203,6 +203,7 @@ def search_features(mz_interval_tree, targets):
                 for iso in rt_filtered_possible_iso_matches:
                     matching_intensity_counts = 0
                     previous_isotopologue_counts = 0
+                    breaks_intensity_counts = 0
                     for sample_name in samples_to_include:
                         previous_isotopologue_intensity = float(isotopologues[-1][sample_name])
                         this_isotopologue_intensity = float(iso[sample_name])
@@ -210,7 +211,10 @@ def search_features(mz_interval_tree, targets):
                             previous_isotopologue_counts += 1
                             if this_isotopologue_intensity < previous_isotopologue_intensity:
                                 matching_intensity_counts += 1
-                    if previous_isotopologue_counts > 0 and matching_intensity_counts / previous_isotopologue_counts > 0.9:
+                        else:
+                            if this_isotopologue_intensity > 0:
+                                breaks_intensity_counts += 1
+                    if previous_isotopologue_counts > 0 and matching_intensity_counts / previous_isotopologue_counts > 0.9 and breaks_intensity_counts == 0:
                         intensity_rt_filtered_possible_iso_matches.append(iso)
                 preferred_isotopologue = None
                 lowest_mass_error = np.inf
@@ -269,10 +273,10 @@ if __name__ == '__main__':
     all_targets = generate_adducts(all_targets, "[M-H+e]", {"H": -1, "e": 1})
 
     search_features(mz_interval_tree, all_targets)
-    with open("./theoretical_PS_search_results_MG_6_14_2023_v3.json", 'w') as out_fh:
+    with open("./theoretical_PS_search_results_MG_6_14_2023_v1.json", 'w') as out_fh:
         json.dump([prep_for_serialization(x) for x in all_targets], out_fh, indent=4)
     ground_truth = read_target_list(sys.argv[2])
     check_target_correctness(all_targets, ground_truth)
 
-    with open("./features_to_PS_annotations_MG_6_14_2023_v3.json", "w") as out_fh:
+    with open("./features_to_PS_annotations_MG_6_14_2023_v1.json", "w") as out_fh:
         json.dump(create_annotated_feature_table(all_targets, features), out_fh, indent=4)
