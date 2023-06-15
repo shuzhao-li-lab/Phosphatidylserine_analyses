@@ -1,8 +1,8 @@
-# Reanalysis of Rafi's data with asari (TIC norm)
-
-
+# PS-targeted Lipidomics analyses of Exhausted CD8 T cells
+- Supporting materials for Christopher B. Medina et al.'s paper - "Exposed phosphatidylserine as a non-classical inhibitory molecule during CD8 T cell exhaustion"
 ## mode 
 - RPneg
 
 ## Lipidomics
-- Initiate in March 13rd, 2023
+- The analyses was initiated by March 13rd, 2023
+- We found increased PS species in exhausted CD8 T cells, consistent with RNA-seq analyses. 
